@@ -39,9 +39,10 @@ class MetricsCallback(Callback):
         Args:
             runner ("IRunner"): IRunner instance.
         """
-        #print(torch.sum(state.model.fc1.weight),state.model.fc1.weight[5][300])
-        #print(torch.sum(state.model.conv_blocks[0].conv1.weight))
-        state.loaders['train'].dataset.refresh()
+        if (state.stage_epoch_step) % 200==0:
+            self.get_grads_pic(state)
+            get_layer_output()
+        #state.loaders['train'].dataset.refresh()
         if self.directory is not None: torch.save(state.model.state_dict(), str(self.directory) + '/' +
                                                   self.model_name + "_" + str(
             state.stage_epoch_step) + ".pth")
@@ -61,7 +62,39 @@ class MetricsCallback(Callback):
                                                     name='valid _auc')
             self.visualizer.display_current_results(state.stage_epoch_step,
                                                     met[0], name='valid_accuracy')
+    def get_grads_pic(self, state,loc=""):
+        # model train/valid step
+        x, y = state.batch['image_pixels'],state.batch['targets']
+        model=state.model
+        y_hat =model(x)
+        loss=state.criterion(y_hat,y)
+        loss.backward()
 
+        #get the blocks
+
+
+
+        for block in state.model.state_dict().keys():
+            fig = plt.figure()
+            key = int(block.split('conv_blocks.')[1].split(".")[0])
+            data=model.conv_blocks[key].conv.weight.grad.flatten(start_dim=1, end_dim=-1)
+
+            min_max = [torch.min(data), torch.max(data)]
+            plt.imshow(data, aspect='auto')
+            plt.title(str(min_max[0]) + "_" + str(min_max[1]))
+            fig.savefig(
+               str(root)+'/diagnostics/'+'g_' + str(key) + "_grad_weights.png")
+            plt.close()
+            fig = plt.figure()
+            data=model.conv_blocks[key].conv.weight.detach().clone().flatten(start_dim=1, end_dim=-1)
+
+            min_max = [torch.min(data), torch.max(data)]
+            plt.imshow(data, aspect='auto')
+            plt.title(str(min_max[0]) + "_" + str(min_max[1]))
+            fig.savefig(
+                 str(root)+'/diagnostics/'+'w_'+ str(key) + "_weights.png")
+            plt.close()
+        plt.close('all')
 class MetricsCallback_loc(Callback):
 
     def __init__(self,
@@ -169,7 +202,8 @@ class MetricsCallback_loc(Callback):
 
     def on_batch_end(self,state):
 
-        #self.get_grads_pic(state)
+        self.get_grads_pic(state)
+
         # if state.global_batch_step == 1:
         #     self.rub_pred()
         #torch.nn.utils.clip_grad_value_(state.model.parameters(), clip_value=1.0)

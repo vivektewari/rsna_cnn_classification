@@ -64,8 +64,8 @@ class rsna_loader(Dataset):
                 ims=temp[t][p]["images"]
 
                 for im in ims:
-                    if im == 'blank':Images=cv2.imread(self.blank_loc + im + '.jpg', cv2.IMREAD_UNCHANGED)
-                    else:Images = cv2.imread(pth + im + '.jpg', cv2.IMREAD_UNCHANGED)
+                    if im == 'blank':Images=cv2.imread(self.blank_loc + im + '.png', cv2.IMREAD_UNCHANGED)
+                    else:Images = cv2.imread(pth + im + '.png', cv2.IMREAD_UNCHANGED)
 
                     channel.append(torch.tensor(Images.astype(np.int32)))
 
@@ -151,12 +151,12 @@ class rsna_loader(Dataset):
 
 if __name__ == "__main__":
     from funcs import get_dict_from_class
-    from config import DataLoad1_l
 
-    dataCreated='/home/pooja/Documents/vivek/projects/rsna_cnn_classification/data/dataCreated/'
-    root='/home/pooja/Documents/vivek/projects/rsna_cnn_classification/'
-    base_loc='/home/pooja/Documents/vivek/projects/rsna_cnn_classification/data/dataCreated/preprocessed/'
-    blank_loc='/home/pooja/Documents/vivek/projects/rsna_cnn_classification/data/dataCreated/auxilary/'
+    root = '/home/pooja/PycharmProjects/rsna_cnn_classification/'
+    dataCreated = root + '/data/dataCreated/'
+    base_loc = dataCreated + '/preprocessed2/'
+    blank_loc = dataCreated + '/auxilary/'
+
     class rsna_loader_test():
         def __init__(self):
             self.dl =  rsna_loader( data_frame_path=str(dataCreated)+'/image_info/images7.csv', label=str(root)+ '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train_labels.csv', base_loc=base_loc,blank_loc=blank_loc)
@@ -164,5 +164,5 @@ if __name__ == "__main__":
 
     test=rsna_loader_test()
     dict_=test.dl.dict
-    t1=test.dl.__getitem__('00003')
+    t1=test.dl.patient_dict_('00003')
     t2=0

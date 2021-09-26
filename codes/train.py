@@ -52,7 +52,7 @@ def train(model_param,model_,data_loader_param,data_loader,loss_func,callbacks=N
 
     loaders = {
         "train": DataLoader(data_loader( data_frame=train_file,**get_dict_from_class(data_loader_param)),
-                            batch_size=32,
+                            batch_size=16,
                             shuffle=False,
                             num_workers=4,
                             pin_memory=True,

@@ -108,7 +108,16 @@ class FeatureExtractor(nn.Module):
         return x
 
     def forward(self, input_):
-        x = self.cnn_feature_extractor(input_ / 255)
+        input_=input_[:,-3:,:,:]*1.0
+        mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(2,3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
+        mean=torch.nan_to_num(mean,nan=0)
+        std = torch.std(torch.where(input_>0.0,input_,mean), dim=(2, 3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
+        std=torch.where(std==0.0,torch.tensor(0.0001),std)
+        std = torch.nan_to_num(std, nan=0)
+
+        x=(input_-mean)/std
+        #x = input_/torch.nan_to_num(mean,nan=1)
+        x = self.cnn_feature_extractor(x)
         if self.fc1_p is None:
             x = x.flatten(start_dim=1, end_dim=-1)
             return self.activation(x)
@@ -121,16 +130,15 @@ class FeatureExtractor(nn.Module):
                 x = self.dropout(x)
             x = x / torch.max(x)
             x = self.fc2(x)
+
         x = self.activation(x)
+        # x=F.softmax(x,dim=1)
+        # x = F.softmax(x, dim=1)
+        # x =x[:,0]
 
         return x.flatten()
 
-    def forward1(self, input_):
-        x = self.cnn_feature_extractor(input_)
-        x = x.flatten(start_dim=1, end_dim=-1)
-        x = self.activation(x / torch.max(x))
 
-        return x
 
 
 class FCLayered(FeatureExtractor):

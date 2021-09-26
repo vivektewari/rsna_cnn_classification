@@ -96,8 +96,11 @@ if False:
     df.to_csv(dataCreated / 'image_info' / 'images2.csv')
 
 
-if False:
-    output='/home/pooja/Documents/vivek/projects/rsna_cnn_classification/data/dataCreated/auxilary/blank.jpg'
+if True:
+    root = '/home/pooja/PycharmProjects/rsna_cnn_classification/'
+    dataCreated = root + '/data/dataCreated/'
+    blank_loc = dataCreated + '/auxilary/'
+    output=blank_loc+'/blank.png'
     im=np.zeros((256,256))
     cv2.imwrite(output,im )
 
@@ -156,7 +159,7 @@ if False:
 
 if True:
     # fitering images with coverage_ratio<threshold and creating probabilty for based on coverage+ratio
-    threshold=0.07
+    threshold=0.2
     key_grouper=['patient_id','test_type','plane']
 
 
@@ -166,7 +169,9 @@ if True:
     df3=df1.set_index(key_grouper).join(df2)
     df3['occupied_perc_prob']=df3['occupied_perc']/df3['occupied_perc_sum']
     df3.reset_index(inplace=True)
-
+    #considering only t1w axial images
+    df3=df3[df3['test_type']=='T1w']
+    df3 = df3[df3['plane'] == 'axial']
     df3.to_csv(Path(dataCreated)/ 'image_info' / 'images6.csv',index=False)
 if True:
     # preparing data set for dataloader
