@@ -47,7 +47,7 @@ class FeatureExtractor(nn.Module):
         self.input_image_dim = input_image_dim
         self.fc1_p = fc1_p
         self.mode_train = 1
-        self.activation_l = torch.nn.ReLU()
+        self.activation_l = torch.nn.LeakyReLU()
         self.activation = torch.nn.Sigmoid()
         self.dropout = nn.Dropout(0.2)
         last_channel = start_channel
@@ -110,7 +110,7 @@ class FeatureExtractor(nn.Module):
         return x
 
     def forward(self, input_):
-        input_=input_[:,-21:,:,:]*1.0
+        input_=input_*1.0
         mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(2,3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
         mean=torch.nan_to_num(mean,nan=0)
         std = torch.std(torch.where(input_>0.0,input_,mean), dim=(2, 3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)

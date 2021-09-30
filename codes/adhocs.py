@@ -170,8 +170,8 @@ if 0:
     df3['occupied_perc_prob']=df3['occupied_perc']/df3['occupied_perc_sum']
     df3.reset_index(inplace=True)
     #considering only t1w axial images
-    df3=df3[df3['test_type']=='T1w']
-    df3 = df3[df3['plane'] == 'axial']
+    # df3=df3[df3['test_type']=='T1w']
+    # df3 = df3[df3['plane'] == 'axial']
     df3.to_csv(Path(dataCreated)/ 'image_info' / 'images6.csv',index=False)
 if False:
     # preparing data set for dataloader
@@ -223,7 +223,9 @@ if False:
 
 if 1:# adding slice location information and selecting those images only whose slice location is in close proximity to 5 divisibilty
     #it's 7b replacement for 7 for new addition
-
+    included_tests=['T1w','T1wCE']
+    included_plain=['axial']
+    patient_repeat = 21*(len(included_plain)*len(included_tests))
     df0 = pd.read_csv(dataCreated + '/image_info/images2.csv')
     df1 = pd.read_csv(dataCreated+ '/image_info/images6.csv')
     df0 = df0[df0['SliceLocation'] != 'error']
@@ -235,8 +237,8 @@ if 1:# adding slice location information and selecting those images only whose s
     #df0 = df0.drop_duplicates(['patient_id', 'test_type', 'SliceLocation_integer'])
 
     df2=pd.merge(df1,df0[['patient_id', 'test_type','image_name', 'SliceLocation_integer']],on=['patient_id', 'test_type','image_name'],how='left')
-    df2 = df2[df2['test_type'] == 'T1w']
-    df2 = df2[df2['plane'] == 'axial']
+    df2 = df2[df2['test_type'].isin(included_tests)]
+    df2 = df2[df2['plane'].isin(included_plain)]
 
 
     df2 = df2.groupby(['patient_id', 'plane', 'test_type','SliceLocation_integer'])['image_name','occupied_perc_prob'].agg(list).reset_index().rename(columns={'image_name':'images'})
@@ -244,11 +246,11 @@ if 1:# adding slice location information and selecting those images only whose s
     df2['req'] = 1#df2.apply(lambda row: req(row['plane'], row['test_type']), axis=1)
     df2 = df2[df2['req'] != 0]
     patient_ids = df2['patient_id'].unique()
-    patient_ids = [[p] * 21 for p in patient_ids]
-    plains = [['axial'] * 21 + ['coronal']*0 + ['sagittal']*0 for p in range(len(patient_ids))]
-    test_types = [['T1w']*21 for p in range(len(patient_ids))]
-    requireds = [[1] * 21 for p in range(len(patient_ids))]
-    SliceLocation_integer=[[-50 + 5*i for i in range(21)] * 1 for p in range(len(patient_ids))]
+    patient_ids = [[p] * patient_repeat  for p in patient_ids]
+    plains = [included_plain*2 * 21 for p in range(len(patient_ids))]
+    test_types = [included_tests*21 for p in range(len(patient_ids))]
+    requireds = [[1] * patient_repeat  for p in range(len(patient_ids))]
+    SliceLocation_integer=[[-50 + 5*i for i in range(21)] * 2 for p in range(len(patient_ids))]
     template = pd.DataFrame(data={'patient_id': list(itertools.chain(*patient_ids)),
                                   'plane': list(itertools.chain(*plains)),
                                   'test_type': list(itertools.chain(*test_types)),

@@ -1,6 +1,6 @@
 
 class Model1:
-    start_channel = 21
+    start_channel = 42
     channels = [32,64,128,256,128,64]
     input_image_dim = (256, 256)
     convs = [5, 5,2, 3, 2, 2, 2]  # 5,5,3

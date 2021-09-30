@@ -58,7 +58,24 @@ def conv_save2(input_path,output_path):
 
     cv2.imwrite(output_path,im)
 
+def conv_save3(input_path,output_path):
+    """
+    avoid resizing where length and breadth are both less than 256 and using padding instead to
+    make the image same size
 
+    :param input_path: str|image loc
+    :param output_path: where images needs to be saved
+    :return:
+    """
+    Images = di.read_file(input_path, force=True)
+    data =Images.pixel_array
+    if data.shape[0]<=256 and data.shape[1]<=256:
+        im = cv2.copyMakeBorder(data, 0, 256-data.shape[0],0, 256-data.shape[1], cv2.BORDER_CONSTANT)
+    else:
+        im = cv2.resize(data.astype(np.uint16), (256, 256), interpolation=cv2.INTER_CUBIC)
+    clahe = cv2.createCLAHE(clipLimit=5)
+
+    cv2.imwrite(output_path,im)
 
 
 
@@ -67,7 +84,7 @@ if  True:
     cores = cpu_count()
     pool = Pool(processes=cores)
     pth = str(root) + '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train/'
-    output_path=str(dataCreated)+"/preprocessed2/"
+    output_path=str(dataCreated)+"/preprocessed3/"
     df0=pd.read_csv(dataCreated +str('/image_info/images0.csv'),dtype='str')#,nrows=20000
     #df1=df1[0:8765]
     temp=df0.apply(lambda row: str(row['patient_id'])+"/"+row['test_type']+"/"+row['image_name'],axis=1)

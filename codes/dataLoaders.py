@@ -95,7 +95,7 @@ class rsna_loader(Dataset):
         :param test_type: str
         :return:
         """
-        if plain == 'axial' and test_type in ('T1w') and SliceLocation in [-50 + 5*i for i in range(21)]:
+        if plain == 'axial' and test_type in ('T1w','T1wCE') and SliceLocation in [-50 + 5*i for i in range(21)]:
             return 1
         else :
             return 0
