@@ -110,14 +110,25 @@ class FeatureExtractor(nn.Module):
         return x
 
     def forward(self, input_):
-        input_=input_[:,-21:,:,:]*1.0
-        mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(2,3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
-        mean=torch.nan_to_num(mean,nan=0)
-        std = torch.std(torch.where(input_>0.0,input_,mean), dim=(2, 3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
-        std=torch.where(std==0.0,torch.tensor(0.0001),std)
-        std = torch.nan_to_num(std, nan=0)
 
-        x=(input_-mean)/std
+        input_ = input_ * 1.0
+        mean = torch.mean(torch.where(input_ > 0.0, input_, torch.tensor(np.nan).to(device)), dim=(2, 3)).reshape(
+            (input_.shape[0:2] + (1, 1))).expand(input_.shape)
+
+        mean[torch.isnan(mean)] = torch.tensor(0.0).to(device)
+        std = torch.std(torch.where(input_ > 0.0, input_, mean), dim=(2, 3)).reshape(
+            (input_.shape[0:2] + (1, 1))).expand(input_.shape)
+        std = torch.where(std == 0.0, torch.tensor(0.0001).to(device), std)
+
+        x = (input_ - mean) / std
+        # input_=input_[:,-21:,:,:]*1.0
+        # mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(2,3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
+        # mean=torch.nan_to_num(mean,nan=0)
+        # std = torch.std(torch.where(input_>0.0,input_,mean), dim=(2, 3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
+        # std=torch.where(std==0.0,torch.tensor(0.0001),std)
+        # std = torch.nan_to_num(std, nan=0)
+
+        # x=(input_-mean)/std
         #x = input_/torch.nan_to_num(mean,nan=1)
         x = self.cnn_feature_extractor(x)
         if self.fc1_p is None:

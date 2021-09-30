@@ -48,7 +48,7 @@ random.seed(23)
 
 
 image_scale=None
-pre_trained_model =root+"//codes/fold0/checkpoints/best.pth"
+pre_trained_model =root+"//codes/fold0/checkpoints/last.pth"
 #pre_trained_model =root+"/outputs/weights/rsna_190.pth"
 
 #pre_trained_model = None
