@@ -1,4 +1,5 @@
 import pandas as pd
+import seaborn as sns
 from config import root,dataCreated
 import matplotlib.pyplot as plt
 from commonFuncs import packing
@@ -40,7 +41,7 @@ if False:
 
     plt.savefig(str(root) + "/diagnostics/data_plots/" + "len.png")
 
-if True:
+if False:
     df0 = pd.read_csv(dataCreated / 'image_info' / 'images4.csv')
     image_vars = ['image_shape_x', 'image_shape_y', 'pixel_mean', 'pixel_std', 'pixel_max', 'pixel_min', 'pixel_0.75',
                   'Pixel_0.9']
@@ -53,3 +54,32 @@ if True:
         plt.hist(temp, bins=100, density=False, histtype='bar', cumulative=0)
         plt.savefig(str(root) + "/diagnostics/data_plots/" + var + "_hist2.png")
         plt.close()
+if False: # checking in slice location and occupied perc distribution
+    var='slice_loc_perc_'
+    df0 = pd.read_csv(dataCreated + '/image_info/images2.csv')
+    df1 = pd.read_csv(dataCreated+ '/image_info/images6.csv')
+    df1=df1[df1['image_shape_x']==512]
+    df1 = df1[df1['image_shape_y'] == 512]
+
+    df2=pd.merge(df1 ,df0[['patient_id','test_type','image_name','SliceLocation']],on =['patient_id','test_type','image_name'])
+    df2=df2[df2['SliceLocation']!='error']
+    df2['SliceLocation']= df2['SliceLocation'].astype('float64')
+    for plane in ['coronal','axial','sagittal']:
+        sns.scatterplot(data=df2[df2['plane']==plane][["SliceLocation","occupied_perc","plane"]].fillna(0), x="SliceLocation", y="occupied_perc", hue="plane")
+        plt.savefig(str(root) + "/data/diagnostics/data_plots/" + var +plane+ "_scatter.png")
+        plt.close()
+if 1:#checking slice location avaiblty for each value
+    var='slice_loc'
+    df0 = pd.read_csv(dataCreated + '/image_info/images2.csv')
+    df0 = df0[df0['SliceLocation'] != 'error']
+    df0=df0[df0['test_type']=='T1w']
+    df0 = df0[df0['plane'] == 'axial']
+    df0['SliceLocation_integer'] = df0['SliceLocation'].astype('float32').apply(lambda x:round(x))
+    df0['SliceLocation_integer'] = df0['SliceLocation_integer'].apply(lambda x:x if x%5==0 else x-1 if (x-1)%5==0 else x+1 if (x+1)%5==0 else -1)
+    df0=df0[df0['SliceLocation_integer']!=-1]
+    #df0=df0.drop_duplicates(['patient_id','test_type','SliceLocation_integer'])
+    df1=df0.groupby(['SliceLocation_integer'])['patient_id'].count()
+    plt.hist(df0[['SliceLocation_integer']], density=False,bins=400, histtype='step', cumulative=0)
+
+    plt.savefig(str(root) + "/data/diagnostics/data_plots/" + var +"_hist.png")
+    plt.close()

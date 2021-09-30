@@ -49,6 +49,7 @@ class FeatureExtractor(nn.Module):
         self.mode_train = 1
         self.activation_l = torch.nn.ReLU()
         self.activation = torch.nn.Sigmoid()
+        self.dropout = nn.Dropout(0.2)
         last_channel = start_channel
         for i in range(self.num_blocks):
             self.conv_blocks.append(ConvBlock(in_channels=last_channel, out_channels=channels[i],
@@ -68,9 +69,8 @@ class FeatureExtractor(nn.Module):
             self.num_blocks+=1
 
 
-
         self.init_weight()
-        self.dropout = nn.Dropout(0.3)
+
 
     def get_conv_output_dim(self):
         input_ = torch.Tensor(np.zeros((1,self.start_channel)+self.input_image_dim))
@@ -103,12 +103,14 @@ class FeatureExtractor(nn.Module):
             # x_50 = torch.quantile(x, 1)
             # x=self.activation_l((x-x_50-1)/max(x_50,0.01))
             if i<(len(self.conv_blocks)-1): x = self.activation_l(x)
+            if self.mode_train == 1:
+                x = self.dropout(x)
             #x=torch.clamp(x,100,-100)
 
         return x
 
     def forward(self, input_):
-        input_=input_[:,-3:,:,:]*1.0
+        input_=input_[:,-21:,:,:]*1.0
         mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(2,3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)
         mean=torch.nan_to_num(mean,nan=0)
         std = torch.std(torch.where(input_>0.0,input_,mean), dim=(2, 3)).reshape((input_.shape[0:2]+(1,1))).expand(input_.shape)

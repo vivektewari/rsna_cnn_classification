@@ -26,15 +26,15 @@ if False:
     df=pd.DataFrame(data={'patient_id':patient_id,'test_type':test_type,'image_name':image_name})
     df.to_csv(dataCreated / 'image_info' / 'images0.csv')
 
-if False:
+if 0:
     start=time.time()
     #adding .dcm non pixel information
-
+    dataCreated=Path(dataCreated)
     df0=pd.read_csv(dataCreated / 'image_info' / 'images0.csv',dtype='str')
     #df1=df1[0:8765]
     temp=df0.apply(lambda row: pth+str(row['patient_id'])+"/"+row['test_type']+"/"+row['image_name']+".dcm",axis=1)
     Images1 = []
-    image_vars=['coords','ImageOrientationPatient','SliceLocation','PhotometricInterpretation','PixelSpacing','SamplesPerPixel']
+    image_vars=['coords','ImageOrientationPatient','ImagePositionPatient','SliceLocation','PhotometricInterpretation','SliceThickness','SpacingBetweenSlices','PixelSpacing','SamplesPerPixel','RescaleIntercept','RescaleSlope','RescaleType']
     list_=[[] for i in range(len(image_vars))]
     d=DataCreation()
     loop=0
@@ -56,7 +56,7 @@ if False:
                 list_[i].append("error")
 
 
-        if loop%1000==0 or loop==df1.shape[0]:
+        if loop%1000==0 or loop==df0.shape[0]:
             print(loop,time.time()-start)
             for i in range(len(image_vars)):
                 df[image_vars[i]] = list_[i]
@@ -96,7 +96,7 @@ if False:
     df.to_csv(dataCreated / 'image_info' / 'images2.csv')
 
 
-if True:
+if False:
     root = '/home/pooja/PycharmProjects/rsna_cnn_classification/'
     dataCreated = root + '/data/dataCreated/'
     blank_loc = dataCreated + '/auxilary/'
@@ -157,9 +157,9 @@ if False:
     df2['occupied_perc']=df2['raw_area']/df2['max_area']
     df2.reset_index().to_csv(dataCreated / 'image_info' / 'images5.csv',index=False)
 
-if True:
+if 0:
     # fitering images with coverage_ratio<threshold and creating probabilty for based on coverage+ratio
-    threshold=0.2
+    threshold=0
     key_grouper=['patient_id','test_type','plane']
 
 
@@ -173,7 +173,7 @@ if True:
     df3=df3[df3['test_type']=='T1w']
     df3 = df3[df3['plane'] == 'axial']
     df3.to_csv(Path(dataCreated)/ 'image_info' / 'images6.csv',index=False)
-if True:
+if False:
     # preparing data set for dataloader
     def req(plain, test_type):
         if plain == 'axial':
@@ -221,6 +221,55 @@ if True:
     df3.to_csv(Path(dataCreated) / 'image_info' / 'images7.csv',index=False)
 
 
+if 1:# adding slice location information and selecting those images only whose slice location is in close proximity to 5 divisibilty
+    #it's 7b replacement for 7 for new addition
+
+    df0 = pd.read_csv(dataCreated + '/image_info/images2.csv')
+    df1 = pd.read_csv(dataCreated+ '/image_info/images6.csv')
+    df0 = df0[df0['SliceLocation'] != 'error']
+
+    df0['SliceLocation_integer'] = df0['SliceLocation'].astype('float32').apply(lambda x: round(x))
+    df0['SliceLocation_integer'] = df0['SliceLocation_integer'].apply(
+        lambda x: x if x % 5 == 0 else x - 1 if (x - 1) % 5 == 0 else x + 1 if (x + 1) % 5 == 0 else -1)
+    df0 = df0[df0['SliceLocation_integer'] != -1]
+    #df0 = df0.drop_duplicates(['patient_id', 'test_type', 'SliceLocation_integer'])
+
+    df2=pd.merge(df1,df0[['patient_id', 'test_type','image_name', 'SliceLocation_integer']],on=['patient_id', 'test_type','image_name'],how='left')
+    df2 = df2[df2['test_type'] == 'T1w']
+    df2 = df2[df2['plane'] == 'axial']
+
+
+    df2 = df2.groupby(['patient_id', 'plane', 'test_type','SliceLocation_integer'])['image_name','occupied_perc_prob'].agg(list).reset_index().rename(columns={'image_name':'images'})
+    df2['image_count'] = df2['images'].apply(lambda x: len(x))
+    df2['req'] = 1#df2.apply(lambda row: req(row['plane'], row['test_type']), axis=1)
+    df2 = df2[df2['req'] != 0]
+    patient_ids = df2['patient_id'].unique()
+    patient_ids = [[p] * 21 for p in patient_ids]
+    plains = [['axial'] * 21 + ['coronal']*0 + ['sagittal']*0 for p in range(len(patient_ids))]
+    test_types = [['T1w']*21 for p in range(len(patient_ids))]
+    requireds = [[1] * 21 for p in range(len(patient_ids))]
+    SliceLocation_integer=[[-50 + 5*i for i in range(21)] * 1 for p in range(len(patient_ids))]
+    template = pd.DataFrame(data={'patient_id': list(itertools.chain(*patient_ids)),
+                                  'plane': list(itertools.chain(*plains)),
+                                  'test_type': list(itertools.chain(*test_types)),
+                                  'required': list(itertools.chain(*requireds)),
+                                  'SliceLocation_integer':list(itertools.chain(*SliceLocation_integer))
+                                  })
+
+    template.set_index(['patient_id', 'plane', 'test_type','SliceLocation_integer'], inplace=True)
+    df3 = template.join(df2.set_index(['patient_id', 'plane', 'test_type','SliceLocation_integer']))
+    df3.reset_index(inplace=True)
+
+    df3['images'] = df3['images'].fillna("").apply(list)
+    df3['images'] = df3.apply(lambda row: row['images'] + ['blank'] * (max(0,row['required']-len(row['images']))),axis=1)
+    #df3['select_images'] = df3.apply(lambda row: row['images'][0:row['required']], axis=1)
+    df3['loc'] = '/' + df3['patient_id'].astype('str') + "/" + df3['test_type'] + '/'
+
+    df3['occupied_perc_prob']=df3['occupied_perc_prob'].fillna('blank')
+    for col in df3.columns:
+        df3[col] = df3[col].apply(lambda x: packing.pack(x))
+
+    df3.to_csv(Path(dataCreated) / 'image_info' / 'images7b.csv',index=False)
 
 
 

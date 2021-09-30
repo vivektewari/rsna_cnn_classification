@@ -8,7 +8,7 @@ from models import *
 from param_options import *
 
 #from funcs import *
-root = '/home/pooja/PycharmProjects/rsna_cnn_classification/'
+root ='/home/pooja/PycharmProjects/rsna_cnn_classification/'
 dataCreated = root+'/data/dataCreated/'
 raw_data=root+ '/data/'
 image_loc =dataCreated +'/preprocessed2/'
@@ -48,9 +48,10 @@ random.seed(23)
 
 
 image_scale=None
-pre_trained_model =root+"//codes/fold0/checkpoints/last.pth"
+pre_trained_model =root+"//codes/fold0/checkpoints/best.pth"
+#pre_trained_model =root+"/outputs/weights/rsna_190.pth"
 
-pre_trained_model = None
+#pre_trained_model = None
 #'/home/pooja/PycharmProjects/digitRecognizer/rough/localization/fold0/checkpoints/train.17.pth'
 
 

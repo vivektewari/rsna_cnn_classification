@@ -9,6 +9,8 @@ maxrows =50000
 class rsna_loader(Dataset):
     def __init__(self, data_frame=None, label=None, base_loc=None,blank_loc=None,data_frame_path=None):
         """
+        1. get csv from label and image_info file
+        2. convert image info file in dictionary
 
         :param data_frame: dataframewith image list
         :param label: dataframe with labels
@@ -53,21 +55,22 @@ class rsna_loader(Dataset):
 
         test_types=['T2w','FLAIR','T1wCE', 'T1w']
         plane=['axial','coronal','sagittal']
-
+        SliceLocation_integer=[-50 + 5*i for i in range(21) ]
         temp=self.dict[idx]
 
         for t in  test_types:
             pth=self.base_loc+"/"+str(idx)+"/"+t+"/"
             for p in plane:
-                if self.req(p,t)==0:continue
+                for sl in SliceLocation_integer:
+                    if self.req(p,t,sl)==0:continue
 
-                ims=temp[t][p]["images"]
+                    ims=temp[t][p][sl]["images"]
 
-                for im in ims:
-                    if im == 'blank':Images=cv2.imread(self.blank_loc + im + '.png', cv2.IMREAD_UNCHANGED)
-                    else:Images = cv2.imread(pth + im + '.png', cv2.IMREAD_UNCHANGED)
+                    for im in ims:
+                        if im == 'blank':Images=cv2.imread(self.blank_loc + im + '.png', cv2.IMREAD_UNCHANGED)
+                        else:Images = cv2.imread(pth + im + '.png', cv2.IMREAD_UNCHANGED)
 
-                    channel.append(torch.tensor(Images.astype(np.int32)))
+                        channel.append(torch.tensor(Images.astype(np.int32)))
 
 
         pixel=torch.stack(channel)
@@ -85,24 +88,30 @@ class rsna_loader(Dataset):
     def __len__(self):
         return len(self.dict.keys())
 
-    def req(self,plain, test_type):
+    def req(self,plain, test_type,SliceLocation):
         """
         provides number of channel allocated fr tthis
         :param plain: str
         :param test_type: str
         :return:
         """
+        if plain == 'axial' and test_type in ('T1w') and SliceLocation in [-50 + 5*i for i in range(21)]:
+            return 1
+        else :
+            return 0
         if plain == 'axial':
             if test_type in ('T1wCE', 'T1w'):
                 return 3
             else:
                 return 2
+
         elif plain == 'coronal' and test_type in ('FLAIR'):
             return 1
         elif plain == 'sagittal' and test_type in ('T2w'):
             return 1
         else:
             return 0
+
 
     def rec_dict(self, data_frame, key_list,last_key=None):
         """
@@ -118,10 +127,10 @@ class rsna_loader(Dataset):
             data_frame=data_frame.set_index(var)
             dict_=data_frame.to_dict(orient='index')
             for key in dict_.keys():
-                num_choice=self.req(key,last_key)
+                num_choice=1#self.req(key,last_key)
                 prob=dict_[key]['occupied_perc_prob']
                 if prob!='blank':
-                    dict_[key]['images']=np.random.choice(dict_[key]['images'], size=num_choice, replace=False, p=prob)
+                    dict_[key]['images']=np.random.choice(dict_[key]['images'], size=num_choice, replace=False)
             return dict_
         else:
             val = data_frame[var].unique()
@@ -140,7 +149,7 @@ class rsna_loader(Dataset):
         # create master dict
 
         start=time.time()
-        keys=['patient_id', 'test_type', 'plane']
+        keys=['patient_id', 'test_type', 'plane','SliceLocation_integer']
         dict=self.rec_dict(self.data,keys)
         print(f'Time: {time.time() - start}')
         return dict
@@ -159,7 +168,7 @@ if __name__ == "__main__":
 
     class rsna_loader_test():
         def __init__(self):
-            self.dl =  rsna_loader( data_frame_path=str(dataCreated)+'/image_info/images7.csv', label=str(root)+ '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train_labels.csv', base_loc=base_loc,blank_loc=blank_loc)
+            self.dl =  rsna_loader( data_frame_path=str(dataCreated)+'/image_info/images7b.csv', label=str(root)+ '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train_labels.csv', base_loc=base_loc,blank_loc=blank_loc)
 
 
     test=rsna_loader_test()

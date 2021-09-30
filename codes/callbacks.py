@@ -39,10 +39,10 @@ class MetricsCallback(Callback):
         Args:
             runner ("IRunner"): IRunner instance.
         """
-        if (state.stage_epoch_step) % 200==0:
+        if (state.stage_epoch_step) % 5==0:
             self.get_grads_pic(state)
             get_layer_output()
-        #state.loaders['train'].dataset.refresh()
+        if (state.stage_epoch_step) % 5==0:state.loaders['train'].dataset.refresh()
         if self.directory is not None: torch.save(state.model.state_dict(), str(self.directory) + '/' +
                                                   self.model_name + "_" + str(
             state.stage_epoch_step) + ".pth")
@@ -62,6 +62,15 @@ class MetricsCallback(Callback):
                                                     name='valid _auc')
             self.visualizer.display_current_results(state.stage_epoch_step,
                                                     met[0], name='valid_accuracy')
+
+    def on_batch_end(self, state):
+        if state.loader_batch_step == 1  and state.is_train_loader:
+            preds = torch.where(state.batch['logits'] > 0.5, 1, 0)
+            met = getMetrics(state.batch['targets'], preds)
+            self.visualizer.display_current_results(state.stage_epoch_step,
+                                                    met[0], name='train_accuracy')
+
+
     def get_grads_pic(self, state,loc=""):
         # model train/valid step
         x, y = state.batch['image_pixels'],state.batch['targets']

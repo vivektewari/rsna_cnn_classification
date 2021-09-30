@@ -1,14 +1,32 @@
 import pandas as pd
 import random
-from dataLoaders import DigitData
+
 from config import *
-from funcs import get_dict_from_class, updateMetricsSheet
+from funcs import get_dict_from_class, updateMetricsSheet,DataCreation
 from models import FeatureExtractor
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 import torch
 
 random.seed(24)
+def prepare_desired_list(pth):
+    fields={'test_type':0,'patient_id':1,'image_name':2,'coords':3,'ImageOrientationPatient':4}
+    master_list=[[] for i in range(len(fields.keys()))]
+
+    d = DataCreation()
+    for ro,dirs, files in os.walk(pth):
+        for file in files:
+            if file.endswith(".dcm"):
+                temp=ro.split("/")
+                master_list[0].append(temp[-1])
+                master_list[1].append(str(temp[-2]))
+                master_list[2].append(file.split(".")[0])
+                Images = di.read_file(k, force=True)
+                data = Images.pixel_array
+                data = np.where(data > 0, 1, 0)
+                master_list[3].append(d.coords(data))
+                master_list[4].appendImages['ImageOrientationPatient'].value
+
 def get_inference(Model1,DataLoad1,holdData,notes= ""):
     dev_dict = get_dict_from_class(DataLoad1)
     hold_dict = get_dict_from_class(DataLoad1)
