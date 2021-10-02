@@ -55,13 +55,13 @@ class rsna_loader(Dataset):
 
         test_types=['T2w','FLAIR','T1wCE', 'T1w']
         plane=['axial','coronal','sagittal']
-        SliceLocation_integer=[-50 + 5*i for i in range(21) ]
+        SliceLocation=[20 + 5*i for i in range(21) ]
         temp=self.dict[idx]
 
         for t in  test_types:
             pth=self.base_loc+"/"+str(idx)+"/"+t+"/"
             for p in plane:
-                for sl in SliceLocation_integer:
+                for sl in SliceLocation:
                     if self.req(p,t,sl)==0:continue
 
                     ims=temp[t][p][sl]["images"]
@@ -95,7 +95,7 @@ class rsna_loader(Dataset):
         :param test_type: str
         :return:
         """
-        if plain == 'axial' and test_type in ('T1w','T1wCE') and SliceLocation in [-50 + 5*i for i in range(21)]:
+        if plain == 'axial' and test_type in ('T1w') and SliceLocation in [20+ 5*i for i in range(21)]:
             return 1
         else :
             return 0
@@ -128,8 +128,8 @@ class rsna_loader(Dataset):
             dict_=data_frame.to_dict(orient='index')
             for key in dict_.keys():
                 num_choice=1#self.req(key,last_key)
-                prob=dict_[key]['occupied_perc_prob']
-                if prob!='blank':
+
+                if len(dict_[key]['images'])>1:
                     dict_[key]['images']=np.random.choice(dict_[key]['images'], size=num_choice, replace=False)
             return dict_
         else:
@@ -149,7 +149,7 @@ class rsna_loader(Dataset):
         # create master dict
 
         start=time.time()
-        keys=['patient_id', 'test_type', 'plane','SliceLocation_integer']
+        keys=['patient_id', 'test_type', 'plane','SliceLocation']
         dict=self.rec_dict(self.data,keys)
         print(f'Time: {time.time() - start}')
         return dict
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     class rsna_loader_test():
         def __init__(self):
-            self.dl =  rsna_loader( data_frame_path=str(dataCreated)+'/image_info/images7b.csv', label=str(root)+ '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train_labels.csv', base_loc=base_loc,blank_loc=blank_loc)
+            self.dl =  rsna_loader( data_frame_path=str(dataCreated)+'/image_info/images7c.csv', label=str(root)+ '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train_labels.csv', base_loc=base_loc,blank_loc=blank_loc)
 
 
     test=rsna_loader_test()

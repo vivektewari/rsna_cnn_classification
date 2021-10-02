@@ -33,7 +33,7 @@ def conv_save(input_path,output_path):
     im = cv2.resize(data.astype('float32'), (256, 256), interpolation=cv2.INTER_CUBIC)
     cv2.imwrite(output_path, im)
 def create_directories(pth,folders,sub_folder):
-    root=pth+"/preprocessed2/"
+    root=pth+"/preprocessed3/"
     if not os.path.exists(root):
         os.mkdir(root)
         for f in folders:
@@ -74,7 +74,7 @@ def conv_save3(input_path,output_path):
     else:
         im = cv2.resize(data.astype(np.uint16), (256, 256), interpolation=cv2.INTER_CUBIC)
     clahe = cv2.createCLAHE(clipLimit=5)
-
+    im = clahe.apply(im) + 30
     cv2.imwrite(output_path,im)
 
 
@@ -92,7 +92,7 @@ if  True:
     loop=0
     for k in list(temp):
 
-        pool.apply_async(conv_save2, args=(pth + k + ".dcm",output_path + k + '.png'))
+        pool.apply_async(conv_save3, args=(pth + k + ".dcm",output_path + k + '.png'))
         loop+=1
         if loop%50==0 :
 
@@ -106,7 +106,7 @@ if  True:
 
 if __name__ == "__main__":
     pth = str(root) + '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train/'
-    output_path=str(dataCreated)+"/preprocessed2/"
+    output_path=str(dataCreated)+"/preprocessed3/"
     Images_orig = di.read_file(pth + '/00417/T1w/Image-93'+ ".dcm", force=True)
     Images_orig = Images_orig.pixel_array
     Images_saved= cv2.imread(output_path + '/00417/T1w/Image-93' + ".png", cv2.IMREAD_ANYDEPTH )

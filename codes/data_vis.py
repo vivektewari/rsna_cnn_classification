@@ -3,32 +3,35 @@ import seaborn as sns
 from config import root,dataCreated
 import matplotlib.pyplot as plt
 from commonFuncs import packing
+from pathlib import Path
 import torch,cv2
-if False:
+if 0:
     # finding what will be best input 4 channel,9, 12 channel?
 
 
     import seaborn as sns
-    df0 = pd.read_csv(dataCreated / 'image_info' / 'images2.csv', dtype='str')
+    df0 = pd.read_csv(Path(dataCreated) / 'image_info' / 'images2.csv', dtype='str')
     c=df0.describe()
     pid='patient_id'
-    for pl in ['test_type','plane','SamplesPerPixel','PhotometricInterpretation']:
-        data = df0.groupby(pl)["image_name"].count()
-        data2 = df0[[pl,pid]].sort_values(by=[pl,pid]).reset_index().drop_duplicates(subset=[pl,pid]).groupby(by=[pl])[pid].count()
-        data.plot.pie(autopct="%.1f%%")
-        plt.savefig(str(root)+"/diagnostics/data_plots/"+pl+".png")
+    df0['SliceThickness']=df0['SliceThickness'].astype('float32').astype('int')
+    data =df0.drop_duplicates(subset=[pid,'test_type','plane'])
+    for pl in ['test_type','plane','SamplesPerPixel','PhotometricInterpretation','SliceThickness']:
+        data2 = data.groupby(pl)["image_name"].count()
+        data2.plot.pie(autopct="%.1f%%")
+        plt.savefig(str(root)+"data/diagnostics/data_plots/"+pl+".png")
         plt.close()
         data2.plot.bar()
-        plt.savefig(str(root) + "/diagnostics/data_plots/" + pl + "_account_count.png")
+        plt.savefig(str(root) + "data/diagnostics/data_plots/" + pl + "_account_count.png")
         plt.close()
-    data = df0[['test_type','plane',pid]].drop_duplicates(subset=['test_type','plane',pid]).groupby(['test_type','plane']).size().unstack(fill_value=0)
-    #plt.imshow(data, cmap='hot', interpolation='nearest')
-    sns.heatmap(data, annot=True, cmap='Blues', fmt='g')
-    plt.savefig(str(root) + "/diagnostics/data_plots/" + "type_v_plane_heat.png")
-    plt.close()
-    plt.hist(df0[['area']],bins=10, alpha=0.5,histtype='stepfilled' )
-    plt.savefig(str(root) + "/diagnostics/data_plots/" + "area.png")
-    plt.close()
+    for heat_maps in [['test_type','plane'],['plane','SliceThickness'],['test_type','SliceThickness']]:
+        data = df0[heat_maps+[pid]].drop_duplicates(subset=heat_maps+[pid]).groupby(heat_maps).size().unstack(fill_value=0)
+        #plt.imshow(data, cmap='hot', interpolation='nearest')
+        sns.heatmap(data, annot=True, cmap='Blues', fmt='g')
+        plt.savefig(str(root) + "data/diagnostics/data_plots/" + "".join(heat_maps) +"_heat.png")
+        plt.close()
+    # plt.hist(df0[['area']],bins=10, alpha=0.5,histtype='stepfilled' )
+    # plt.savefig(str(root) + "data/diagnostics/data_plots/" + "area.png")
+    # plt.close()
 if False:
     #analysing best crop for images
     df0 = pd.read_csv(dataCreated / 'image_info' / 'images1.csv', dtype='str')
@@ -68,7 +71,7 @@ if False: # checking in slice location and occupied perc distribution
         sns.scatterplot(data=df2[df2['plane']==plane][["SliceLocation","occupied_perc","plane"]].fillna(0), x="SliceLocation", y="occupied_perc", hue="plane")
         plt.savefig(str(root) + "/data/diagnostics/data_plots/" + var +plane+ "_scatter.png")
         plt.close()
-if 1:#checking slice location avaiblty for each value
+if 0:#checking slice location avaiblty for each value
     var='slice_loc'
     df0 = pd.read_csv(dataCreated + '/image_info/images2.csv')
     df0 = df0[df0['SliceLocation'] != 'error']
@@ -82,4 +85,40 @@ if 1:#checking slice location avaiblty for each value
     plt.hist(df0[['SliceLocation_integer']], density=False,bins=400, histtype='step', cumulative=0)
 
     plt.savefig(str(root) + "/data/diagnostics/data_plots/" + var +"_hist.png")
+    plt.close()
+if 0:
+    # testing for slice location offset. Compute difference of first and last visible slides
+
+    included_plain = ['axial']
+    df0 = pd.read_csv(dataCreated + '/image_info/images2.csv')
+    df1 = pd.read_csv(dataCreated + '/image_info/images5.csv')
+    print('start_'+str(df0.shape[0]))
+    df0 = df0[df0['SliceLocation'] != 'error']
+    print('waterfall_slice_loc_error'+str(df0.shape[0]))
+
+    df0['SliceLocation'] = df0['SliceLocation'].astype('float32')  # .apply(lambda x: round(x))
+    # df0 = df0.drop_duplicates(['patient_id', 'test_type', 'SliceLocation_integer'])
+    print('df1_start' + str(df1.shape[0]))
+    df2 = pd.merge(df1.drop('plane',axis=1), df0[['patient_id', 'test_type', 'image_name', 'SliceLocation','plane']],
+                   on=['patient_id', 'test_type', 'image_name'], how='inner')
+    print('inner_join loss' + str(df2.shape[0]))
+    df2 = df2[df2['plane'].isin(included_plain)]
+    print('axial complement loss' + str(df2.shape[0]))
+
+    df2 = df2.sort_values(['patient_id', 'test_type', 'SliceLocation'])
+    df2['pixel_max'] = df2['pixel_max'].apply(lambda x: int(x > 0))
+    df2 = df2.groupby(['patient_id', 'plane', 'test_type'])[
+        'image_name', 'pixel_max', 'SliceLocation'].agg(list).reset_index().rename(columns={'image_name': 'images'})
+    df2['pixel_max_str'] = df2['pixel_max'].apply(lambda x: "".join(map(str, x)))
+    df2['pixel_max_val_pass'] = df2['pixel_max_str'].apply(lambda x: [len(x.split('01')[0])+1,
+                                                           len(x)-len(x.split('10')[1])-2] if len(x.split('01')) == 2 and len(
+                                                               x.split('10')) == 2 else -1)
+    print('post_listing' + str(df2.shape[0]))
+    df2=df2[ df2['pixel_max_val_pass']!=-1]
+    print('slice_location _validation_loss_' + str(df2.shape[0]))
+    df2['slice_diff'] = df2.apply(lambda row: row['SliceLocation'][row['pixel_max_val_pass'][1]] -
+                                              row['SliceLocation'][row['pixel_max_val_pass'][0]], axis=1)
+    plt.hist(df2[['slice_diff']] , density=False, bins=400, histtype='step', cumulative=0)
+
+    plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'slice_diff' + "_hist.png")
     plt.close()

@@ -25,7 +25,7 @@ data_loader = rsna_loader
 
 #Model
 model_param = Model1
-model =FeatureExtractor
+model =modelling_3d
 
 #loss function
 loss_func =BCELoss(loss_func=nn.BCELoss())

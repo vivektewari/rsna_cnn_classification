@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from funcs import get_dict_from_class
-from models import FeatureExtractor, FTWithLocalization
+from models import FeatureExtractor, modelling_3d
 from losses import BCELoss
 
 from torch.utils.data import DataLoader

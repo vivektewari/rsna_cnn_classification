@@ -2,7 +2,7 @@ from dataLoaders import *
 from catalyst.dl import SupervisedRunner, CallbackOrder, Callback, CheckpointCallback
 from config import *
 from funcs import get_dict_from_class,count_parameters
-from models import FeatureExtractor,FCLayered
+from models import FeatureExtractor,modelling_3d
 from losses import BCELoss
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -52,7 +52,7 @@ def train(model_param,model_,data_loader_param,data_loader,loss_func,callbacks=N
 
     loaders = {
         "train": DataLoader(data_loader( data_frame=train_file,**get_dict_from_class(data_loader_param)),
-                            batch_size=32,
+                            batch_size=8,
                             shuffle=False,
                             num_workers=4,
                             pin_memory=True,
