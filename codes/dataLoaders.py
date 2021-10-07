@@ -4,7 +4,7 @@ import torch,itertools,cv2,time,random
 import pydicom as di
 from commonFuncs import packing
 import numpy as np
-
+import os
 maxrows =50000
 class rsna_loader(Dataset):
     def __init__(self, data_frame=None, label=None, base_loc=None,blank_loc=None,data_frame_path=None):
@@ -24,7 +24,7 @@ class rsna_loader(Dataset):
         self.labels=temp.set_index('BraTS21ID').to_dict()['MGMT_value']
 
         if data_frame is None:
-            data_frame = pd.read_csv(data_frame_path)
+            data_frame = pd.read_csv(data_frame_path)#,nrows=210
             data_frame['patient_id']=data_frame['patient_id'].apply(lambda x: str(x).zfill(5))
         for col in data_frame.columns:
             data_frame[col] = data_frame[col].apply(lambda x: packing.unpack(x))
@@ -33,6 +33,7 @@ class rsna_loader(Dataset):
         self.image_col = 'images'
         self.patient_col ='patient_id'
         self.base_loc=base_loc
+        self.consistency()
 
         self.blank_loc=blank_loc
         self.dict=self.nested_dict_from_df(self.data)
@@ -66,11 +67,13 @@ class rsna_loader(Dataset):
 
                     ims=temp[t][p][sl]["images"]
 
+
                     for im in ims:
                         if im == 'blank':Images=cv2.imread(self.blank_loc + im + '.png', cv2.IMREAD_UNCHANGED)
                         else:Images = cv2.imread(pth + im + '.png', cv2.IMREAD_UNCHANGED)
-
+                        #if np.max(Images) is None:print(pth + im + '.png')
                         channel.append(torch.tensor(Images.astype(np.int32)))
+
 
 
         pixel=torch.stack(channel)
@@ -138,6 +141,30 @@ class rsna_loader(Dataset):
                 temp = data_frame[data_frame[var] == v]
                 dict_[v]= self.rec_dict(temp, key_list[:],v)
             return dict_
+    def consistency(self):
+        pth=self.base_loc
+        locs=list('/' + self.data['patient_id'].astype('str') + "/" + self.data['test_type'] + '/')
+        images=list(self.data[self.image_col])
+        new_images=[]
+        num_images_removed=0
+        for i in range(len(locs)):
+
+            img=[]
+            loc=locs[i]
+            image_=images[i]
+            for image in image_:
+                if image=='blank':continue
+                elif os.path.isfile(pth+loc+"/"+image+  ".png"):
+                    img.append(image)
+                else:
+                    print("image removed :"+pth+loc+"/"+image+  ".png")
+                    num_images_removed+=1
+            new_images.append(img)
+        print("images removed : "+str(num_images_removed))
+
+
+
+
 
 
 
@@ -163,15 +190,43 @@ if __name__ == "__main__":
 
     root = '/home/pooja/PycharmProjects/rsna_cnn_classification/'
     dataCreated = root + '/data/dataCreated/'
-    base_loc = dataCreated + '/preprocessed2/'
+    base_loc = dataCreated + '/preprocessed3/'
     blank_loc = dataCreated + '/auxilary/'
 
     class rsna_loader_test():
         def __init__(self):
             self.dl =  rsna_loader( data_frame_path=str(dataCreated)+'/image_info/images7c.csv', label=str(root)+ '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train_labels.csv', base_loc=base_loc,blank_loc=blank_loc)
 
+        def get_images(self):
+            self.dl = rsna_loader(data_frame_path=str(dataCreated) + '/image_info/images7c.csv', label=str(
+                root) + '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train_labels.csv', base_loc=base_loc,
+                                  blank_loc=blank_loc)
+
+
 
     test=rsna_loader_test()
     dict_=test.dl.dict
-    t1=test.dl.patient_dict_('00003')
-    t2=0
+    t1 = test.dl.patient_dict_('00003')
+
+    for j in ['00003','00000']:
+        y= test.dl.patient_dict_(j)['image_pixels']
+        input_= test.dl.patient_dict_(j)['image_pixels']
+        input_ = input_.reshape((1, 1,21,) + tuple(input_.shape[1:])) * 1.0
+        mean = torch.mean(torch.where(input_ > 0.0, input_, torch.tensor(np.nan)), dim=(3, 4)).reshape(
+            (input_.shape[0:3] + (1, 1))).expand(input_.shape)
+        mean = torch.nan_to_num(mean, nan=0)
+        std = torch.std(torch.where(input_ > 0.0, input_, mean), dim=(3, 4)).reshape(
+            (input_.shape[0:3] + (1, 1))).expand(input_.shape)
+        std = torch.where(std == 0.0, torch.tensor(0.0001), std)
+        std = torch.nan_to_num(std, nan=0)
+
+        x = (input_ - mean) / std
+        x=x.reshape(21,256,256)
+        for i in range(21):
+
+            cv2.imwrite('/home/pooja/PycharmProjects/rsna_cnn_classification/rough/'+str(j)+"_"+str(i)+'.png', np.array(y[i]).astype(np.uint16))
+        c = np.array(y[7])
+        t=cv2.imread(dataCreated + '/preprocessed2/'+'/00060/T1w/Image-18.png',cv2.IMREAD_UNCHANGED)
+        t_ = cv2.imread(dataCreated + '/preprocessed2/' + '/00494/T1w/Image-93.png', cv2.IMREAD_UNCHANGED)
+        cv2.imwrite('/home/pooja/PycharmProjects/rsna_cnn_classification/rough/check.png',
+                    c.astype(np.uint16))

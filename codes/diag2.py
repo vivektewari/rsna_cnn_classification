@@ -13,6 +13,7 @@ import pandas as pd
 from config import model,model_param,pre_trained_model,data_loader_param,data_loader,root
 
 def plot_channels(data, loc="", vmin=0, vmax=1, name_prefix="", aspect=1):
+    if len(data.shape)>3:data=data[0]# just for 3 d model case
     assert len(data.shape) == 3
 
     fig = plt.figure()
@@ -53,9 +54,10 @@ def get_layer_output(model=model):
             for i in range(1,num_layer+1):
                 model.num_blocks = i
                 if i <num_layer:
-                    data= model.cnn_feature_extractor(dict_['image_pixels']/255)
+                    data = model.preprocess(dict_['image_pixels'])
+                    data= model.cnn_feature_extractor(data)
                 else:
-                    data = model(dict_['image_pixels']/255 )[:]
+                    data = model(dict_['image_pixels'] )[:]
 
 
 
@@ -80,7 +82,8 @@ def get_layer_output(model=model):
                 for i in range(1, num_layer+1):
                     model.num_blocks = i
                     if i <num_layer:
-                        data = model.cnn_feature_extractor(dict_['image_pixels'] /255)
+                        data = model.preprocess(dict_['image_pixels'])
+                        data = model.cnn_feature_extractor(data)
                         aspect=1
                     else:
                         data =model(dict_['image_pixels']/255 )[:]

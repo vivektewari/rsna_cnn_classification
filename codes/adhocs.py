@@ -11,21 +11,21 @@ from os import listdir
 from pathlib import Path
 
 pth = str(root) + '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train/'
-
-if False:
+#pth = '/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/preprocessed3/'
+if 0:
     # making a dataframe for each image to keep infor for test_type and patirent_id
 
     test_type, patient_id, image_name, loc = [], [], [], []
     for ro, dirs, files in os.walk(pth):
         for file in files:
-            if file.endswith(".dcm"):
+            if file.endswith(".png"):
                 temp = ro.split("/")
                 test_type.append(temp[-1])
                 patient_id.append(str(temp[-2]))
                 image_name.append(file.split(".")[0])
 
     df = pd.DataFrame(data={'patient_id': patient_id, 'test_type': test_type, 'image_name': image_name})
-    df.to_csv(dataCreated / 'image_info' / 'images0.csv')
+    df.to_csv(Path(dataCreated) / 'image_info' / 'images0.csv')
 
 if 0:
     start = time.time()
@@ -108,13 +108,13 @@ if False:
     im = np.zeros((256, 256))
     cv2.imwrite(output, im)
 
-if False:
+if 1:
     # adding array shape, max ,min 10,90 percentile of pixel value
     start = time.time()
-    df0 = pd.read_csv(dataCreated / 'image_info' / 'images0.csv', dtype='str')
+    df0 = pd.read_csv(Path(dataCreated) / 'image_info' / 'images0.csv', dtype='str',nrows=2000)
     # df1=df1[0:8765]
     temp = df0.apply(
-        lambda row: pth + str(row['patient_id']) + "/" + row['test_type'] + "/" + row['image_name'] + ".dcm", axis=1)
+        lambda row: pth + str(row['patient_id']) + "/" + row['test_type'] + "/" + row['image_name'] + ".png", axis=1)#.dcm
     Images1 = []
     image_vars = ['image_shape_x', 'image_shape_y', 'pixel_mean', 'pixel_std', 'pixel_max', 'pixel_min', 'pixel_0.75',
                   'Pixel_0.9']
@@ -126,8 +126,9 @@ if False:
     for k in list(temp):
 
         loop += 1
-        Images = di.read_file(k, force=True)
-        data = Images.pixel_array
+        # Images = di.read_file(k, force=True)
+        # data = Images.pixel_array
+        data=cv2.imread(k, cv2.IMREAD_UNCHANGED)
 
         for i in range(0, len(image_vars)):
             try:
@@ -136,17 +137,17 @@ if False:
                 elif i == 1:
                     temp = data.shape[1]
                 elif i == 2:
-                    temp = np.mean(data)
+                    temp = np.mean(data[data>0])
                 elif i == 3:
-                    temp = np.std(data)
+                    temp = np.std(data[data>0])
                 elif i == 4:
-                    temp = np.max(data)
+                    temp = np.max(data[data>0])
                 elif i == 5:
-                    temp = np.min(data)
+                    temp = np.min(data[data>0])
                 elif i == 6:
-                    temp = np.percentile(data, 75)
+                    temp = np.percentile(data[data>0], 75)
                 elif i == 7:
-                    temp = np.percentile(data, 90)
+                    temp = np.percentile(data[data>0], 90)
                 list_[i].append(temp)
             except:
                 list_[i].append("error")
@@ -155,9 +156,9 @@ if False:
             for i in range(len(image_vars)):
                 df[image_vars[i]] = list_[i]
             if loop == 1000:
-                df.to_csv(dataCreated / 'image_info' / 'images4.csv')
+                df.to_csv(Path(dataCreated) / 'image_info' / 'images4.csv')
             else:
-                df.to_csv(dataCreated / 'image_info' / 'images4.csv', mode='a', header=False)
+                df.to_csv(Path(dataCreated) / 'image_info' / 'images4.csv', mode='a', header=False)
             list_ = [[] for i in range(len(image_vars))]
             df = df0[loop:min(df0.shape[0] + 1, loop + 1000)]
 if False:
@@ -293,7 +294,7 @@ if 0:  # adding slice location information and selecting those images only whose
 
     df3.to_csv(Path(dataCreated) / 'image_info' / 'images7b.csv', index=False)
 
-if 1:
+if 0:
 
     # adjsuting slice location,making data for 3d scan
     # testing for slice location offset. Compute difference of first and last visible slides
@@ -402,3 +403,7 @@ if 1:
     df3.to_csv(Path(dataCreated) / 'image_info' / 'images7c.csv', index=False)
 
 
+if 0:
+    #testing the images in data loader
+    df3=pd.read_csv(Path(dataCreated) / 'image_info' / 'images7c.csv', index=False)
+    dar

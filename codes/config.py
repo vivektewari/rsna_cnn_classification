@@ -11,7 +11,7 @@ from param_options import *
 root ='/home/pooja/PycharmProjects/rsna_cnn_classification/'
 dataCreated = root+'/data/dataCreated/'
 raw_data=root+ '/data/'
-image_loc =dataCreated +'/preprocessed2/'
+image_loc =dataCreated +'/preprocessed4/'
 blank_loc =dataCreated + '/auxilary/'
 
 
@@ -51,7 +51,8 @@ image_scale=None
 pre_trained_model =root+"//codes/fold0/checkpoints/best.pth"
 pre_trained_model =root+"/outputs/weights/rsna_9.pth"
 
-pre_trained_model = None
+pre_trained_model ='/home/pooja/Downloads/last.pth'
+pre_trained_model =None
 #'/home/pooja/PycharmProjects/digitRecognizer/rough/localization/fold0/checkpoints/train.17.pth'
 
 

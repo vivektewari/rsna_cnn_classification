@@ -39,7 +39,7 @@ class MetricsCallback(Callback):
         Args:
             runner ("IRunner"): IRunner instance.
         """
-        if (state.stage_epoch_step) % 5==0:
+        if (state.stage_epoch_step) % 2==0:
             self.get_grads_pic(state)
             get_layer_output()
         if (state.stage_epoch_step) % 5==0:state.loaders['train'].dataset.refresh()
@@ -174,7 +174,7 @@ class MetricsCallback_loc(Callback):
         """
         #print(torch.sum(state.model.fc1.weight),state.model.fc1.weight[5][300])
         #print(torch.sum(state.model.conv_blocks[0].conv1.weight))
-        if (state.stage_epoch_step -1) % 5== 0:
+        if (state.stage_epoch_step -1) % 50== 0:
             get_layer_output()
             self.get_grads_pic(state)
         if self.directory is not None: torch.save(state.model.state_dict(), str(self.directory) + '/' +

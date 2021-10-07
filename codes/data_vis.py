@@ -1,10 +1,21 @@
 import pandas as pd
 import seaborn as sns
+import enum
+from unet import UNet
+from scipy import stats
+
 from config import root,dataCreated
 import matplotlib.pyplot as plt
 from commonFuncs import packing
 from pathlib import Path
 import torch,cv2
+
+import numpy as np
+import random
+import torchio as tio
+from tqdm import tqdm
+import multiprocessing
+import torch.nn.functional as F
 if 0:
     # finding what will be best input 4 channel,9, 12 channel?
 
@@ -44,7 +55,7 @@ if False:
 
     plt.savefig(str(root) + "/diagnostics/data_plots/" + "len.png")
 
-if False:
+if 0:
     df0 = pd.read_csv(dataCreated / 'image_info' / 'images4.csv')
     image_vars = ['image_shape_x', 'image_shape_y', 'pixel_mean', 'pixel_std', 'pixel_max', 'pixel_min', 'pixel_0.75',
                   'Pixel_0.9']
@@ -122,3 +133,59 @@ if 0:
 
     plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'slice_diff' + "_hist.png")
     plt.close()
+    seed=23
+    random.seed(seed)
+    torch.manual_seed(seed)
+    num_workers = multiprocessing.cpu_count()
+    plt.rcParams['figure.figsize'] = 12, 6
+    images_dir = Path(dataCreated + '/preprocessed2/')
+    image_paths = sorted(images_dir.glob('*/T1w/*.png'))
+if 1: #pixel hist plotting
+
+
+    def plot_histogram(axis, tensor, num_positions=100, label=None, alpha=0.05, color=None):
+        values = tensor.numpy().ravel()
+        if values.max()<0.1:return None
+        values=values[values!=0]
+        if np.std(values)<0.001:return None
+        kernel = stats.gaussian_kde(values)
+
+        positions = np.linspace(values.min(), values.max(), num=num_positions)
+        histogram = kernel(positions)
+        kwargs = dict(linewidth=1, color='black' if color is None else color, alpha=alpha)
+        if label is not None:
+            kwargs['label'] = label
+        axis.plot(positions, histogram, **kwargs)
+
+
+
+
+
+
+    test_type='T1w'
+    images_dir = Path(str(dataCreated)+"/preprocessed4/")
+    image_paths = sorted(images_dir.glob('*/'+test_type+'/*.png'))
+
+    fig, ax = plt.subplots(dpi=100)
+    color='cyan'
+
+    for path in tqdm(image_paths[0:5000]):
+        tensor = tio.ScalarImage(path).data
+
+        if 'FLAIR' in str(path):
+            color = 'red'
+        elif 'T1wCE' in str(path):
+            color = 'green'
+        elif 'T1w' in str(path):
+            color = 'blue'
+        elif 'T2w' in str(path):
+            color = 'black'
+        plot_histogram(ax, tensor, color=color)
+    ax.set_xlim(0, 10000)
+    ax.set_ylim(0, 0.0005);
+    ax.set_title('Original histograms of all samples')
+    ax.set_xlabel('Intensity')
+    ax.grid()
+    plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'pixels_dist_trans' + "_hist.png")
+
+

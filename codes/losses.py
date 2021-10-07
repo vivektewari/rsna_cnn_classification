@@ -16,8 +16,8 @@ class BCELoss(nn.Module):
         # pred = pred.reshape(bs*s, o)
         #pred = self.sigmoid(pred)
         pred = torch.clamp(pred, min=EPSILON_FP16, max=1.0-EPSILON_FP16)
-
         return self.func(pred,torch.tensor(actual,dtype=torch.float32))
+
 
 class LocalizatioLoss(nn.Module):
     def __init__(self):
