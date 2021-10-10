@@ -34,9 +34,11 @@ class rsna_loader(Dataset):
         self.image_col = 'images'
         self.patient_col ='patient_id'
         self.base_loc=base_loc
+
         # self.consistency()
 
         self.blank_loc=blank_loc
+
         # self.dict=self.nested_dict_from_df(self.data)
 
         self.range_to_patient=self.index_to_patient_id()
@@ -162,26 +164,26 @@ class rsna_loader(Dataset):
                 temp = data_frame[data_frame[var] == v]
                 dict_[v]= self.rec_dict(temp, key_list[:],v)
             return dict_
-    def consistency(self):
-        pth=self.base_loc
-        locs=list('/' + self.data['patient_id'].astype('str') + "/" + self.data['test_type'] + '/')
-        images=list(self.data[self.image_col])
-        new_images=[]
-        num_images_removed=0
-        for i in range(len(locs)):
-
-            img=[]
-            loc=locs[i]
-            image_=images[i]
-            for image in image_:
-                if image=='blank':continue
-                elif os.path.isfile(pth+loc+"/"+image+  ".png"):
-                    img.append(image)
-                else:
-                    print("image removed :"+pth+loc+"/"+image+  ".png")
-                    num_images_removed+=1
-            new_images.append(img)
-        print("images removed : "+str(num_images_removed))
+    # def consistency(self):
+    #     pth=self.base_loc
+    #     locs=list('/' + self.data['patient_id'].astype('str') + "/" + self.data['test_type'] + '/')
+    #     images=list(self.data[self.image_col])
+    #     new_images=[]
+    #     num_images_removed=0
+    #     for i in range(len(locs)):
+    #
+    #         img=[]
+    #         loc=locs[i]
+    #         image_=images[i]
+    #         for image in image_:
+    #             if image=='blank':continue
+    #             elif os.path.isfile(pth+loc+"/"+image+  ".png"):
+    #                 img.append(image)
+    #             else:
+    #                 print("image removed :"+pth+loc+"/"+image+  ".png")
+    #                 num_images_removed+=1
+    #         new_images.append(img)
+    #     print("images removed : "+str(num_images_removed))
 
 
 
