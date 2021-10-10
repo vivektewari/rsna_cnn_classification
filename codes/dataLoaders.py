@@ -34,10 +34,10 @@ class rsna_loader(Dataset):
         self.image_col = 'images'
         self.patient_col ='patient_id'
         self.base_loc=base_loc
-        #self.consistency()
+        # self.consistency()
 
         self.blank_loc=blank_loc
-        #self.dict=self.nested_dict_from_df(self.data)
+        # self.dict=self.nested_dict_from_df(self.data)
 
         self.range_to_patient=self.index_to_patient_id()
     def refresh(self):
@@ -86,7 +86,7 @@ class rsna_loader(Dataset):
                     for im in ims:
                         if im == 'blank':Images=cv2.imread(self.blank_loc + im + '.png', cv2.IMREAD_UNCHANGED)
                         else:Images = cv2.imread(pth + im + '.png', cv2.IMREAD_UNCHANGED)
-                        #if np.max(Images) is None:print(pth + im + '.png')
+
                         channel.append(torch.tensor(Images.astype(np.int32)))
 
 
@@ -207,7 +207,7 @@ class rsna_loader(Dataset):
 
 
 if __name__ == "__main__":
-    from funcs import get_dict_from_class
+    # from funcs import get_dict_from_class
 
     root = '/home/pooja/PycharmProjects/rsna_cnn_classification/'
     dataCreated = root + '/data/dataCreated/'
