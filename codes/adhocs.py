@@ -108,7 +108,7 @@ if False:
     im = np.zeros((256, 256))
     cv2.imwrite(output, im)
 
-if 1:
+if 0:
     # adding array shape, max ,min 10,90 percentile of pixel value
     start = time.time()
     df0 = pd.read_csv(Path(dataCreated) / 'image_info' / 'images0.csv', dtype='str',nrows=2000)
@@ -403,7 +403,9 @@ if 0:
     df3.to_csv(Path(dataCreated) / 'image_info' / 'images7c.csv', index=False)
 
 
-if 0:
+if 1:#for nii file
     #testing the images in data loader
-    df3=pd.read_csv(Path(dataCreated) / 'image_info' / 'images7c.csv', index=False)
-    dar
+    df0=pd.read_csv(Path(dataCreated) / 'image_info' / 'images7c.csv')
+    df1=df0.drop_duplicates(['patient_id','test_type'])
+    df1=df1.drop(['plane','SliceLocation','images'],axis=1)
+    df1.to_csv(Path(dataCreated) / 'image_info' / 'images7d.csv', index=False)

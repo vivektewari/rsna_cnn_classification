@@ -2,6 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import torch,itertools,cv2,time,random
 import pydicom as di
+import torchio as tio
 from commonFuncs import packing
 import numpy as np
 import os
@@ -26,21 +27,22 @@ class rsna_loader(Dataset):
         if data_frame is None:
             data_frame = pd.read_csv(data_frame_path)#,nrows=210
             data_frame['patient_id']=data_frame['patient_id'].apply(lambda x: str(x).zfill(5))
-        for col in data_frame.columns:
-            data_frame[col] = data_frame[col].apply(lambda x: packing.unpack(x))
+        # for col in data_frame.columns:
+        #     data_frame[col] = data_frame[col].apply(lambda x: packing.unpack(x))
         self.data = data_frame
         self.data.reset_index(inplace=True, drop=True)
         self.image_col = 'images'
         self.patient_col ='patient_id'
         self.base_loc=base_loc
-        self.consistency()
+        #self.consistency()
 
         self.blank_loc=blank_loc
-        self.dict=self.nested_dict_from_df(self.data)
+        #self.dict=self.nested_dict_from_df(self.data)
 
         self.range_to_patient=self.index_to_patient_id()
     def refresh(self):
-        self.dict = self.nested_dict_from_df(self.data)
+        pass
+        #self.dict = self.nested_dict_from_df(self.data)
 
     def index_to_patient_id(self):
         dict={}
@@ -49,8 +51,21 @@ class rsna_loader(Dataset):
             dict[i]=temp[i]
         return dict
 
+    def patient_dict_ni_(self, idx):
+        channel = []
 
+        test_types = ['T1w']#'T2w', 'FLAIR', 'T1wCE',
+        plane = ['axial', 'coronal', 'sagittal']
 
+        for t in test_types:
+            pth = self.base_loc + "/" + str(idx) + "/" + t + "/"
+
+            channel = tio.ScalarImage(pth+'resampled_eq.nii').data
+
+        pixel = channel #torch.stack(channel)
+        label = self.labels[idx]
+
+        return {'targets': label, 'image_pixels': pixel}
     def patient_dict_(self,idx):
         channel = []
 
@@ -86,10 +101,11 @@ class rsna_loader(Dataset):
 
     def __getitem__(self, idx):
         patient_id=self.range_to_patient[idx]
-        return self.patient_dict_(patient_id)
+        return self.patient_dict_ni_(patient_id)#self.patient_dict_(patient_id)
 
     def __len__(self):
-        return len(self.dict.keys())
+        #return len(self.dict.keys()) #earlier
+        return self.data.shape[0]
 
     def req(self,plain, test_type,SliceLocation):
         """
@@ -98,10 +114,15 @@ class rsna_loader(Dataset):
         :param test_type: str
         :return:
         """
+        if test_type in ('T1w'):
+            return 1
+        else:
+            return 0
         if plain == 'axial' and test_type in ('T1w') and SliceLocation in [20+ 5*i for i in range(21)]:
             return 1
         else :
             return 0
+
         if plain == 'axial':
             if test_type in ('T1wCE', 'T1w'):
                 return 3

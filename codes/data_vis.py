@@ -163,13 +163,13 @@ if 1: #pixel hist plotting
 
 
     test_type='T1w'
-    images_dir = Path(str(dataCreated)+"/preprocessed4/")
-    image_paths = sorted(images_dir.glob('*/'+test_type+'/*.png'))
+    images_dir = Path(str(dataCreated)+"/nii/")
+    image_paths = sorted(images_dir.glob('*/'+test_type+'/resampled_eq.nii'))
 
     fig, ax = plt.subplots(dpi=100)
     color='cyan'
 
-    for path in tqdm(image_paths[0:5000]):
+    for path in tqdm(image_paths[0:50]):
         tensor = tio.ScalarImage(path).data
 
         if 'FLAIR' in str(path):
@@ -181,11 +181,12 @@ if 1: #pixel hist plotting
         elif 'T2w' in str(path):
             color = 'black'
         plot_histogram(ax, tensor, color=color)
-    ax.set_xlim(0, 10000)
-    ax.set_ylim(0, 0.0005);
+    # ax.set_xlim(0, 50000)
+    # ax.set_ylim(0, 0.0005);
     ax.set_title('Original histograms of all samples')
     ax.set_xlabel('Intensity')
     ax.grid()
-    plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'pixels_dist_trans' + "_hist.png")
+    #plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'pixels_dist_trans' + "_nii_hist.png")
+    plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'pixels_dist_trans' + "eq_nii_hist.png")
 
 

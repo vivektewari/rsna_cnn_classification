@@ -11,7 +11,7 @@ from param_options import *
 root ='/home/pooja/PycharmProjects/rsna_cnn_classification/'
 dataCreated = root+'/data/dataCreated/'
 raw_data=root+ '/data/'
-image_loc =dataCreated +'/preprocessed4/'
+image_loc =dataCreated +'/nii/'
 blank_loc =dataCreated + '/auxilary/'
 
 
@@ -24,7 +24,7 @@ data_loader_param.label=raw_data+rsna_param.label
 data_loader = rsna_loader
 
 #Model
-model_param = Model1
+model_param = Model1_nii
 model =modelling_3d
 
 #loss function

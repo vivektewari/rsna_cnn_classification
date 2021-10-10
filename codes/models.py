@@ -204,15 +204,16 @@ class modelling_3d(FeatureExtractor):
 
         self.init_weight()
     def preprocess(self,input_):
-        input_=input_.reshape((input_.shape[0],1,)+tuple(input_.shape[1:]))*1.0
-        # mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(2,3,4),keepdim=True)#.reshape((input_.shape[0:3]+(1,1))).expand(input_.shape)
-        # mean=torch.nan_to_num(mean,nan=0)
-        # std = torch.std(torch.where(input_>0.0,input_,mean),dim=(2,3,4),keepdim=True)
-        # std=torch.where(std==0.0,torch.tensor(0.0001),std)
-        # std = torch.nan_to_num(std, nan=0)
-        #
-        # x=(input_-mean)/std
-        x=input_/5000.0
+        #below line is not required for nii file model building
+        #input_=input_.reshape((input_.shape[0],1,)+tuple(input_.shape[1:]))*1.0
+        mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(2,3,4),keepdim=True)#.reshape((input_.shape[0:3]+(1,1))).expand(input_.shape)
+        mean=torch.nan_to_num(mean,nan=0)
+        std = torch.std(torch.where(input_>0.0,input_,mean),dim=(2,3,4),keepdim=True)
+        std=torch.where(std==0.0,torch.tensor(0.0001),std)
+        std = torch.nan_to_num(std, nan=0)
+
+        x=(input_-mean)/std
+
         return x
     def forward(self, input_):
 
