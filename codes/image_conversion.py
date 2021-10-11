@@ -29,6 +29,27 @@ def dcm_to_nii(input_path,output_path):
     res=crp(res)
     res.save(output_path+"/resampled.nii")
 
+def tumor_remove(image_path,mask_path,output_dir):
+    """
+
+    :param image_path: str|image path from which tumor extracted
+    :param mask_path: str|mask image
+    :param output_dir: str|folder where tumor and tumor removed brain will be kept
+    :return: None
+    """
+    if not os.path.exists(image_path):
+        print(image_path)
+        return None
+    img = tio.ScalarImage(image_path)
+    tumor=tio.ScalarImage(image_path)
+    mas = tio.ScalarImage(mask_path)
+    mas.data = np.array(mas.data)
+    tumor.data[mas.data==0]=0
+    tumor.save(output_dir + '/tumor.nii')
+    img.data[mas.data>0]=0
+    img.save(output_dir + '/tumor_removed.nii')
+
+
 
 def create_landmark(image_path,filter,output_path=None):
         images_dir = Path(image_path)
@@ -48,6 +69,9 @@ def apply_landmark(image_path,output_path,landmarks):
 
 def apply_landmark_nii(image_path, output_path, landmarks):
     #img = nib.load(image_path)
+    if not os.path.exists(image_path):
+        print(image_path)
+        return None
     img = tio.ScalarImage(image_path)
 
     #sample = np.array(img.get_data().copy())
@@ -62,10 +86,10 @@ def apply_landmark_nii(image_path, output_path, landmarks):
     #nib.save(new_img, output_path)
 #apply_landmark(image_path=dataCreated + '/preprocessed2/', filter='T1w', landmark_path=dataCreated + '/landmarks/T1w.npy')
 
-def create_landmark_nii(image_path,filter,output_path=None):
+def create_landmark_nii(image_path,filter,match_string,output_suffix,output_path=None):
     images_dir = Path(image_path)
-    image_paths = sorted(images_dir.glob('*/' + filter + '/resampled.nii'))
-    histogram_landmarks_path = Path(output_path + filter + '_nii_.npy')
+    image_paths = sorted(images_dir.glob('*/' + filter + '/'+match_string))
+    histogram_landmarks_path = Path(output_path + filter + output_suffix+'_nii_.npy')
     _ = tio.HistogramStandardization.train(
         image_paths,
         output_path=histogram_landmarks_path,
@@ -167,16 +191,19 @@ if  1:
     pth = str(root) + '/data/rsna-miccai-brain-tumor-radiogenomic-classification/train/'
     output_path=str(dataCreated)+"/nii/"
     df0=pd.read_csv(dataCreated +str('/image_info/images0.csv'),dtype='str')#,nrows=20000
-    df0=df0[df0.test_type=='T1w']
+    df0=df0[df0.test_type=='FLAIR']
     #df1=df1[0:8765]
     temp=df0.apply(lambda row: str(row['patient_id'])+"/"+row['test_type']+"/"+row['image_name'],axis=1)
     create_directories(directory_name=output_path,folders=list(df0['patient_id'].unique()),sub_folder=['FLAIR','T1wCE','T1w','T2w'])
     loop=0
-    landmarks = np.load(dataCreated + '/landmarks/T1w_nii_.npy')
+    landmarks = np.load(dataCreated + '/landmarks/FLAIR_tumor__nii_.npy')
     landmarks_dict = {'mri': landmarks}
     histogram_transform = tio.HistogramStandardization(landmarks_dict)
     #from dicom to nifti converter
     df0['loc'] =  "/" + df0['patient_id'] + "/" + df0['test_type']
+
+
+
     temp=df0['loc'].unique()
 
     for k in list(temp):
@@ -185,7 +212,12 @@ if  1:
         #pool.apply_async(apply_landmark, args=(str(dataCreated)+"/preprocessed2/"+k+".png", str(dataCreated)+"/preprocessed4/"+k+".png", histogram_transform ))
         #apply_landmark(str(dataCreated)+"/preprocessed2/"+k+".png", str(dataCreated)+"/preprocessed4/"+k+".png", histogram_transform )
         #pool.apply_async(,args=
-        pool.apply_async(apply_landmark_nii,args=(output_path+"/"+k +"/resampled.nii", output_path+"/"+k +"/resampled_eq.nii", histogram_transform ))
+        pool.apply_async(apply_landmark_nii,args=(output_path+"/"+k +"/tumor.nii", output_path+"/"+k +"/tumor_eq.nii", histogram_transform ))
+        # input_path="/home/pooja/PycharmProjects/rsna_cnn_classification/data/task_2/BraTS2021_Training_Data/"+\
+        #            "BraTS2021_"+k.split("/")[1]+"/BraTS2021_"+k.split("/")[1]+"_"
+        #
+        # pool.apply_async(tumor_remove,args=(input_path+k.split("/")[2].lower()[:]+".nii.gz",input_path+"seg.nii.gz",
+        #              output_path+k))
         loop+=1
         if loop%50==0 :
 
@@ -200,10 +232,10 @@ if  1:
 
 if 0:
     #creting landmarks
-    create_landmark_nii(image_path=str(dataCreated)+"/nii/", filter='T1w', output_path=dataCreated + '/landmarks/')
+    create_landmark_nii(image_path=str(dataCreated)+"/nii/", filter='FLAIR',match_string='tumor.nii' ,output_suffix='_tumor_',output_path=dataCreated + '/landmarks/')
 
         
-if __name__ == "__main__":
+if __name__ == "__main__1":
     landmarks = np.load(dataCreated + '/landmarks/T1w.npy')
     # landmarks_dict = {'mri': landmarks}
     # histogram_transform = tio.HistogramStandardization(landmarks_dict)
@@ -217,3 +249,6 @@ if __name__ == "__main__":
     #
     # Images_saved= cv2.imread(output_path + '/00133/FLAIR/Image-35' + ".png", cv2.IMREAD_ANYDEPTH )
     #dcm_to_nii("/home/pooja/PycharmProjects/rsna_cnn_classification/data/rsna-miccai-brain-tumor-radiogenomic-classification/train/00000/FLAIR", "/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/nii/00000/FLAIR/")
+    tumor_remove(image_path='/home/pooja/PycharmProjects/rsna_cnn_classification/data/task_2/BraTS2021_Training_Data/BraTS2021_00000/BraTS2021_00000_t1.nii.gz',
+                            mask_path='/home/pooja/PycharmProjects/rsna_cnn_classification/data/task_2/BraTS2021_Training_Data/BraTS2021_00000/BraTS2021_00000_seg.nii.gz',
+                 output_dir='/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/nii/00000/')

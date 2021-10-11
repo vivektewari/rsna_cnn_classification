@@ -217,7 +217,7 @@ class modelling_3d(FeatureExtractor):
         return x
     def forward(self, input_):
 
-        x=self.preprocess(input_)
+        x=self.preprocess(input_*1.0)
         x = self.cnn_feature_extractor(x)
         if self.fc1_p is None:
             x = x.flatten(start_dim=1, end_dim=-1)

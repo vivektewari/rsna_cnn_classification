@@ -35,7 +35,7 @@ class DataLoad1:
     pixel_col = ['pixel' + str(i) for i in range(reshape_pixel[0] * reshape_pixel[1])]
     path = ""
 class rsna_param:
-    data_frame_path = 'images7d.csv'
+    data_frame_path = 'ni_images0_tumor.csv'
     label = 'train_labels.csv'
     base_loc = None
     blank_loc = None

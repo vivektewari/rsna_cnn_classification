@@ -403,9 +403,37 @@ if 0:
     df3.to_csv(Path(dataCreated) / 'image_info' / 'images7c.csv', index=False)
 
 
-if 1:#for nii file
+if 0:#for nii file
     #testing the images in data loader
     df0=pd.read_csv(Path(dataCreated) / 'image_info' / 'images7c.csv')
     df1=df0.drop_duplicates(['patient_id','test_type'])
     df1=df1.drop(['plane','SliceLocation','images'],axis=1)
     df1.to_csv(Path(dataCreated) / 'image_info' / 'images7d.csv', index=False)
+
+if 0:#getting segmenttion task file
+    pth = '/home/pooja/PycharmProjects/rsna_cnn_classification/data/task_2/BraTS2021_Training_Data/'
+    test_type, patient_id, image_name, loc = [], [], [], []
+    for ro, dirs, files in os.walk(pth):
+        for file in files:
+            if file.endswith("tumor_eq.nii.gz"):
+                temp = ro.split("/")
+                test_type.append(file.split(".")[0].split("_")[2])
+                patient_id.append(str(temp[-1].removeprefix("BraTS2021_")))
+                #loc.append(str(ro)+"/"+file)
+
+    df = pd.DataFrame(data={'patient_id': patient_id, 'test_type': test_type, 'loc': loc})
+    df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_tumor_eq.csv')
+if 1:#getting segmenttion task file
+    pth ='/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/ni_copy/nii/'
+    test_type, patient_id, image_name, loc = [], [], [], []
+    for ro, dirs, files in os.walk(pth):
+        for file in files:
+            if file.endswith("tumor.nii"):
+                temp = ro.split("/")
+                test_type.append(temp[-1])
+                patient_id.append(temp[-2])
+                #loc.append(str(ro)+"/"+file)
+
+    df = pd.DataFrame(data={'patient_id': patient_id, 'test_type': test_type})#, 'loc': loc
+    df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_tumor.csv')
+
