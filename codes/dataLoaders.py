@@ -56,13 +56,13 @@ class rsna_loader(Dataset):
     def patient_dict_ni_(self, idx):
         channel = []
 
-        test_types = ['T1w']#'T2w', 'FLAIR', 'T1wCE',
-        plane = ['axial', 'coronal', 'sagittal']
+        test_types = ['FLAIR']#'T2w', 'FLAIR', 'T1wCE',T1w
+
 
         for t in test_types:
             pth = self.base_loc + "/" + str(idx) + "/" + t + "/"
 
-            channel = tio.ScalarImage(pth+'tumor.nii').data
+            channel = tio.ScalarImage(pth+self.image_col).data
 
         pixel = channel #torch.stack(channel)
         label = self.labels[idx]

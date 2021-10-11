@@ -425,15 +425,17 @@ if 0:#getting segmenttion task file
     df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_tumor_eq.csv')
 if 1:#getting segmenttion task file
     pth ='/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/ni_copy/nii/'
-    test_type, patient_id, image_name, loc = [], [], [], []
+    test_type, patient_id, image_name, names = [], [], [], []
     for ro, dirs, files in os.walk(pth):
         for file in files:
-            if file.endswith("tumor.nii"):
+            if file.endswith("tumor_eq.nii"):
                 temp = ro.split("/")
                 test_type.append(temp[-1])
                 patient_id.append(temp[-2])
+                names.append(file)
                 #loc.append(str(ro)+"/"+file)
 
-    df = pd.DataFrame(data={'patient_id': patient_id, 'test_type': test_type})#, 'loc': loc
-    df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_tumor.csv')
+    df = pd.DataFrame(data={'patient_id': patient_id, 'test_type': test_type,'file':names})#, 'loc': loc
+    df=df[df.test_type=='FLAIR']
+    df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_tumor_eq.csv')
 
