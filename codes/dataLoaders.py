@@ -31,7 +31,7 @@ class rsna_loader(Dataset):
         #     data_frame[col] = data_frame[col].apply(lambda x: packing.unpack(x))
         self.data = data_frame
         self.data.reset_index(inplace=True, drop=True)
-        self.image_col = 'images'
+        self.image_col = data_frame['file'][0]
         self.patient_col ='patient_id'
         self.base_loc=base_loc
 
