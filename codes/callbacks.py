@@ -39,9 +39,9 @@ class MetricsCallback(Callback):
         Args:
             runner ("IRunner"): IRunner instance.
         """
-        if (state.stage_epoch_step) % 2==0:
-            self.get_grads_pic(state)
-            get_layer_output()
+        # if (state.stage_epoch_step) % 2==0:
+        #     self.get_grads_pic(state)
+        #     get_layer_output()
         if (state.stage_epoch_step) % 5==0:state.loaders['train'].dataset.refresh()
         if self.directory is not None: torch.save(state.model.state_dict(), str(self.directory) + '/' +
                                                   self.model_name + "_" + str(

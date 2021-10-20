@@ -75,6 +75,7 @@ class FeatureExtractor(nn.Module):
     def get_conv_output_dim(self):
         input_ = torch.Tensor(np.zeros((1,self.start_channel)+self.input_image_dim))
         x = self.cnn_feature_extractor(input_)
+        print(x.shape)
         return len(x.flatten()),x.shape
 
     @staticmethod
@@ -130,7 +131,7 @@ class FeatureExtractor(nn.Module):
             x = self.activation_l(self.fc1(x))
             if self.mode_train == 1:
                 x = self.dropout(x)
-            x = x / torch.max(x)
+            x = x / max(abs(torch.max(x)),0.00001)
             x = self.fc2(x)
 
         x = self.activation(x)
@@ -146,14 +147,15 @@ class ConvBlock_3d(nn.Module):
             super().__init__()
             self.pool_size = pool_size
             self.in_channels = in_channels
+            self.conv= None
 
             self.conv = nn.Conv3d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=tuple(np.array(kernel_size) + np.array([0, 0,0])),
-                stride=stride,
-                padding=tuple(np.array(padding) + np.array([0, 0,0])),
-                bias=False)
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=tuple(np.array(kernel_size) + np.array([0, 0,0])),
+                    stride=stride,
+                    padding=tuple(np.array(padding) + np.array([0, 0,0])),
+                    bias=False)
 
             # self.bn1 = nn.BatchNorm2d(out_channels)
             # self.bn2 = nn.BatchNorm2d(out_channels)
@@ -196,6 +198,7 @@ class modelling_3d(FeatureExtractor):
             self.fc1 = nn.Linear(conv_dim[0], fc1_p[0], bias=True)
             self.fc2 = nn.Linear(fc1_p[0], fc1_p[1], bias=True)
         else :
+            self.last_pool_size=conv_dim[1][-3],conv_dim[1][-2],conv_dim[1][-1]
             self.conv_blocks.append(ConvBlock_3d(in_channels=last_channel, out_channels=fc1_p[1],
                                               kernel_size=(1, 1,1), stride=(1, 1,1),
                                               pool_size=(conv_dim[1][-3],conv_dim[1][-2],conv_dim[1][-1]), padding=0))
@@ -214,13 +217,16 @@ class modelling_3d(FeatureExtractor):
 
         x=(input_-mean)/std
 
+
         return x
     def forward(self, input_):
 
         x=self.preprocess(input_*1.0)
+        #x = input_ / 1000.0
         x = self.cnn_feature_extractor(x)
-        if self.fc1_p is None:
-            x = x.flatten(start_dim=1, end_dim=-1)
+        if self.fc1_p[0] is None:
+            #x = F.max_pool3d(x, kernel_size=self.last_pool_size)
+            x = x.flatten()#start_dim=1, end_dim=-1)
             return self.activation(x)
 
         x = x.flatten(start_dim=1, end_dim=-1)

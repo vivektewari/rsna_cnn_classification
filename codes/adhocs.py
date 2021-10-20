@@ -3,8 +3,10 @@ import numpy as np
 import pydicom as di
 import torch, time
 from commonFuncs import packing
-from funcs import DataCreation
+from funcs import DataCreation,create_directories
 from config import root, dataCreated
+import os,glob
+from shutil import copyfile
 import itertools
 import os, cv2
 from os import listdir
@@ -423,12 +425,13 @@ if 0:#getting segmenttion task file
 
     df = pd.DataFrame(data={'patient_id': patient_id, 'test_type': test_type, 'loc': loc})
     df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_tumor_eq.csv')
-if 1:#getting segmenttion task file
-    pth ='/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/ni_copy/nii/'
+if 0:#getting segmenttion task file
+    pth ='/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/kaggle_data_aug/'
+    #pth = '/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/mixed/'
     test_type, patient_id, image_name, names = [], [], [], []
     for ro, dirs, files in os.walk(pth):
         for file in files:
-            if file.endswith("tumor_eq.nii"):
+            if file.endswith("resampled.nii"):#"tumor.nii"
                 temp = ro.split("/")
                 test_type.append(temp[-1])
                 patient_id.append(temp[-2])
@@ -437,5 +440,64 @@ if 1:#getting segmenttion task file
 
     df = pd.DataFrame(data={'patient_id': patient_id, 'test_type': test_type,'file':names})#, 'loc': loc
     df=df[df.test_type=='FLAIR']
-    df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_tumor_eq.csv')
+    df.to_csv(Path(dataCreated) / 'image_info' / 'ni_images0_task_resampled.csv')#'ni_images0_tumor_aug.csv'
+if 1:
+    #creating train file(target ) for augmented list
+    train_file=pd.read_csv('/home/pooja/PycharmProjects/rsna_cnn_classification/data/train_labels.csv')
+    train_file['BraTS21ID'] = train_file['BraTS21ID'].apply(lambda x: str(x).zfill(5))
+    train_file.set_index('BraTS21ID',inplace=True)#.to_dict()['MGMT_value']
+
+    df0=pd.read_csv(Path(dataCreated) / 'image_info' / 'ni_images0_task_resampled.csv')
+    df0['patient_id'] = df0['patient_id'].apply(lambda x: str(x).zfill(5))
+    df0['temp']=df0['patient_id'].apply(lambda x:'0'+x[1:])
+    df0=df0.join(train_file,on='temp')
+    df0=df0.rename(columns={'patient_id':'BraTS21ID'})
+    df0=df0[['BraTS21ID','MGMT_value']]
+    df0.to_csv('/home/pooja/PycharmProjects/rsna_cnn_classification/data/train_labels_aug_resmapled.csv',index=False)
+if 0:
+    #creating train file(target ) for augmented list
+
+
+
+
+
+    train_file=pd.read_csv('/home/pooja/PycharmProjects/rsna_cnn_classification/data/train_labels.csv')
+    train_file['BraTS21ID'] = train_file['BraTS21ID'].apply(lambda x: str(x).zfill(5))
+    dict_=train_file.set_index('BraTS21ID').to_dict()['MGMT_value']
+    dict_1=dict_.copy()
+    for key in dict_.keys():
+        mgmt_val=dict_[key]
+        p=list(key)
+        for i in range(1,6):
+            p[0]=str(i)
+            if int(i) % 2==0:
+                dict_1["".join(p)] = mgmt_val
+            else:
+                dict_1["".join(p)] = 1-mgmt_val
+
+
+    df0=pd.DataFrame({'BraTS21ID':list(dict_1.keys()),'MGMT_value':list(dict_1.values())})
+
+
+    df0.to_csv('/home/pooja/PycharmProjects/rsna_cnn_classification/data/train_labels_aug2.csv',index=False)
+
+
+if 0:# getting common and uncommon patients from kaggle and segmentation data
+    def copy_files(pth, cp_pth, match_list):
+        for cp in match_list:
+            paths = \
+                (glob.glob(pth + cp, recursive=True))
+            for p in paths:
+                p2 = str(p).removeprefix(pth)
+                copyfile(p, cp_pth + p2)
+    train_file = pd.read_csv('/home/pooja/PycharmProjects/rsna_cnn_classification/data/train_labels.csv')
+    train_file['BraTS21ID'] = train_file['BraTS21ID'].apply(lambda x: str(x).zfill(5))
+    df0=pd.read_csv('/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/image_info/ni_images0_task_aug.csv')
+    df0['patient_id'] = df0['patient_id'].apply(lambda x: str(x).zfill(5))
+    common=list(set(train_file['BraTS21ID']).intersection(set(df0['patient_id'])))
+    difference=list(set(train_file['BraTS21ID']).difference(set(df0['patient_id'])))
+    #create_directories(directory_name='common_files',folders=common,sub_folder=['FLAIR'])
+    #create_directories(directory_name='difference_files', folders=difference, sub_folder=['FLAIR'])
+    print(common[0:10])
+    print(difference)
 

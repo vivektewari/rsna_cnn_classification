@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import enum
+import os,glob
 from unet import UNet
 from scipy import stats
 
@@ -140,7 +141,7 @@ if 0:
     plt.rcParams['figure.figsize'] = 12, 6
     images_dir = Path(dataCreated + '/preprocessed2/')
     image_paths = sorted(images_dir.glob('*/T1w/*.png'))
-if 1: #pixel hist plotting
+if 0: #pixel hist plotting
 
 
     def plot_histogram(axis, tensor, num_positions=100, label=None, alpha=0.05, color=None):
@@ -188,5 +189,59 @@ if 1: #pixel hist plotting
     ax.grid()
     #plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'pixels_dist_trans' + "_nii_hist.png")
     plt.savefig(str(root) + "/data/diagnostics/data_plots/" + 'pixels_dist_trans' + "eq_nii_hist.png")
+
+if 1: #plotting slices for each nii to see the diferences
+    def preprocess(input_):
+
+        #below line is not required for nii file model building
+        #input_=input_.reshape((input_.shape[0],1,)+tuple(input_.shape[1:]))*1.0
+        mean=torch.mean(torch.where(input_>0.0,input_,torch.tensor(np.nan)),dim=(0,1,2),keepdim=True)#.reshape((input_.shape[0:3]+(1,1))).expand(input_.shape)
+        mean=torch.nan_to_num(mean,nan=0)
+        std = torch.std(torch.where(input_>0.0,input_,mean),dim=(0,1,2),keepdim=True)
+        std=torch.where(std==0.0,torch.tensor(0.0001),std)
+        std = torch.nan_to_num(std, nan=0)
+
+        x=(input_-mean)/std
+
+        return x
+    def plot_slice_from_3d(nii_file,slice_number,output_loc):
+        mas = tio.ScalarImage(nii_file)
+        splits=str(nii_file).split("/")
+
+        data = np.array(mas.data)[0]
+        p = np.argmax(np.sum(data, axis=(0, 1)))
+        data =preprocess(torch.tensor(data)*1.0).numpy()
+        #data=np.flip(data,axis=1)
+        #data = np.flip(data, axis=1)
+
+        for slice in slice_number:
+            im=data[ :, slice,:].reshape((240,155))*5000
+            name = splits[-3] + splits[-2] +str(slice)+ ".png"
+            cv2.imwrite(output_loc+name,im.astype(np.uint16))
+
+
+    images_dir=Path('/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/rough/')
+    output_loc='/home/pooja/PycharmProjects/rsna_cnn_classification/rough/data_vis_slices/'
+    image_paths = sorted(images_dir.glob('adjusted.nii'))
+    #output_loc = '/home/pooja/PycharmProjects/rsna_cnn_classification/rough/data_vis_slices_2/'
+    #image_paths = sorted(images_dir.glob('00018/FLAIR/task.nii'))
+    for p in image_paths[0:10]:
+        plot_slice_from_3d(p, [5*i for i in range(3,25)], output_loc)
+
+if 0:
+    images_dir=Path('/home/pooja/PycharmProjects/rsna_cnn_classification/data/dataCreated/ni_copy/nii/')
+    image_paths = sorted(images_dir.glob('*/FLAIR/tumor.nii'))
+    output_loc='/home/pooja/PycharmProjects/rsna_cnn_classification/rough/augmentation/'
+    flip = tio.RandomFlip(axes=('LR',))
+    rb=tio.RandomBiasField()
+    re=tio.RandomElasticDeformation()
+    mas = tio.ScalarImage(image_paths[0])
+    img=flip(mas)
+    img.save(output_loc + '/flipped.nii')
+    img = rb(mas)
+    img.save(output_loc + '/rb.nii')
+    img = re(mas)
+    img.save(output_loc + '/re.nii')
+
 
 

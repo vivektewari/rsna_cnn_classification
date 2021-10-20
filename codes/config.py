@@ -11,7 +11,7 @@ from param_options import *
 root ='/home/pooja/PycharmProjects/rsna_cnn_classification/'
 dataCreated = root+'/data/dataCreated/'
 raw_data=root+ '/data/'
-image_loc =dataCreated +'/nii/'
+image_loc =dataCreated +'/mixed/'
 blank_loc =dataCreated + '/auxilary/'
 
 
@@ -37,7 +37,7 @@ device = 'cpu'
 config_id = str(os.getcwd()).split()[-1]
 startTime = time.time()
 
-lr = 0.1
+lr = 0.05
 
 epoch = 200
 
@@ -48,11 +48,11 @@ random.seed(23)
 
 
 image_scale=None
-pre_trained_model =root+"//codes/fold0/checkpoints/best.pth"
-pre_trained_model =root+"/outputs/weights/rsna_9.pth"
+pre_trained_model ="//home/pooja/Downloads/last.pth"
+#pre_trained_model =root+"/outputs/weights/rsna_9.pth"
 
-pre_trained_model ='/home/pooja/Downloads/last.pth'
-pre_trained_model =None
+pre_trained_model ='/home/pooja/Downloads/rsna_20.pth'
+#pre_trained_model =None
 #'/home/pooja/PycharmProjects/digitRecognizer/rough/localization/fold0/checkpoints/train.17.pth'
 
 

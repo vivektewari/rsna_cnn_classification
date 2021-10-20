@@ -1,7 +1,8 @@
 import time
-
+import os
 import pandas as pd
 import numpy as np
+from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
 import gc, random, cv2
 from itertools import permutations, combinations
@@ -550,7 +551,36 @@ class DataCreation:
                                                                                      label) + ".png" )
                 else:self.draw_box(vec_for_draw_box, data= temp,save_loc=data.loc[i,name_col])
         return ret_data
+    def get_1_coords(data):
+        data = torch.where(data > 0, 1, 0)
+        x, y, z = np.argmax(data, axis=0), np.argmax(data, axis=1), np.argmax(data, axis=2)
+        x, y, z = torch.where(x == 0, 240, x), torch.where(y == 0, 240, y), torch.where(z == 0, 240, z)
+        x, y, z = torch.min(x), torch.min(y), torch.min(z)
+        return np.array([x,y,z])
+    def allign_first_coords(t_coords,sub_coords,data):
+        """
+        get coords from sub and target.
+        at any dim if target targets coords >subjects corrds then crop will be applied to subject
+        at any dim if target targets coords <subjects cooords then crop will be applied to targets
+        :param target:
+        :param subject:
+        :return:
+        """
+        final=torch.zeros(data.shape)
+        tx,ty,tz=data.shape[0],data.shape[1],data.shape[2]
 
+        crops_tar=[tx,ty,tz]
+        crops_sub = [tx,ty,tz]
+        for dim in range(3):
+            if t_coords[dim]>sub_coords[dim]:
+                crops_sub[dim]=data.shape[dim]-t_coords[dim]+sub_coords[dim]
+            else:
+                crops_tar[dim] = data.shape[dim] - sub_coords[dim]+t_coords[dim]
+        try:
+            final[t_coords[0]:crops_tar[0],t_coords[1]:crops_tar[1],t_coords[2]:crops_tar[2]]=data[sub_coords[0]:crops_sub[0],sub_coords[1]:crops_sub[1],sub_coords[2]:crops_sub[2]]
+        except:
+            pass
+        return final
 def count_parameters(model):
     table = PrettyTable(["Modules", "Parameters"])
     total_params = 0
@@ -562,6 +592,7 @@ def count_parameters(model):
     print(table)
     print(f"Total Trainable Params: {total_params}")
     return total_params
+
 
 
 
@@ -611,8 +642,49 @@ if __name__ == "__main__":
     c = test_vison_utils()
     c.test_get_detection_pipeline()
 
+def create_directories(directory_name,folders,sub_folder,functionality=None):
+    """
+
+    :param directory_name: str|root folder
+    :param folders: list(str)|folders which needs to be created
+    :param sub_folder:  list(str)|folders which needs to be created
+    :return:
+    """
+    root=directory_name
+    if (not os.path.exists(root)) or functionality == "add":
+        if not os.path.exists(root) :os.mkdir(root)
+        for f in folders:
+            os.mkdir(root+str(f)+"/")
+            for sf in sub_folder:
+                os.mkdir(root + str(f) + "/"+sf)
 
 
 
+def lorenzCurve(y_test,y_score,save_loc=None):
+    n_classes = 1
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _= roc_curve(y_test, y_score)
+        roc_auc[i] = auc(fpr[i], tpr[i])
 
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
+    #Plot of a ROC curve for a specific class
+
+    plt.figure()
+    lw = 2
+    plt.plot(fpr[0], tpr[0], color='darkorange',
+             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[0])
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    if save_loc is not None:plt.savefig(save_loc)
+    else:plt.show()

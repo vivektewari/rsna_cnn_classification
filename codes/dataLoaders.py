@@ -62,8 +62,8 @@ class rsna_loader(Dataset):
         for t in test_types:
             pth = self.base_loc + "/" + str(idx) + "/" + t + "/"
 
-            channel = tio.ScalarImage(pth+self.image_col).data
-
+            channel = tio.ScalarImage(pth+self.image_col).data.long()
+        #print(channel.shape,channel[0][0][0][0])
         pixel = channel #torch.stack(channel)
         label = self.labels[idx]
 
